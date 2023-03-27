@@ -293,6 +293,14 @@ add_executable(leveldbutil
 target_link_libraries(leveldbutil leveldb)
 target_link_options(leveldbutil PRIVATE -sASSERTIONS -sALLOW_MEMORY_GROWTH)
 
+add_executable(leveldbwasm)
+target_sources(leveldbwasm
+  PRIVATE
+    "wasm/idl/dbwrapper.cc"
+    "wasm/idl/dbwrapper.h"
+)
+target_link_libraries(leveldbwasm leveldb)
+
 if(LEVELDB_BUILD_TESTS)
   enable_testing()
 

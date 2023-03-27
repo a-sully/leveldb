@@ -74,6 +74,12 @@ else(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   # Disable RTTI.
   string(REGEX REPLACE "-frtti" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+
+  # Enable pthreads
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+
+  # Enable debug information
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -gsource-map")
 endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
 # Test whether -Wthread-safety is available. See
@@ -285,6 +291,7 @@ add_executable(leveldbutil
   "db/leveldbutil.cc"
 )
 target_link_libraries(leveldbutil leveldb)
+target_link_options(leveldbutil PRIVATE -sASSERTIONS)
 
 if(LEVELDB_BUILD_TESTS)
   enable_testing()
@@ -347,6 +354,7 @@ if(LEVELDB_BUILD_TESTS)
     )
   endif(NOT BUILD_SHARED_LIBS)
   target_link_libraries(leveldb_tests leveldb gmock gtest gtest_main)
+  target_link_options(leveldb_tests PRIVATE -sASSERTIONS)
   target_compile_definitions(leveldb_tests
     PRIVATE
       ${LEVELDB_PLATFORM_NAME}=1
@@ -373,6 +381,7 @@ if(LEVELDB_BUILD_TESTS)
         "${test_file}"
     )
     target_link_libraries("${test_target_name}" leveldb gmock gtest)
+    target_link_options("${test_target_name}" PRIVATE -sASSERTIONS)
     target_compile_definitions("${test_target_name}"
       PRIVATE
         ${LEVELDB_PLATFORM_NAME}=1
@@ -421,6 +430,7 @@ if(LEVELDB_BUILD_BENCHMARKS)
         "${bench_file}"
     )
     target_link_libraries("${bench_target_name}" leveldb gmock gtest benchmark)
+    target_link_options("${bench_target_name}" PRIVATE -sASSERTIONS)
     target_compile_definitions("${bench_target_name}"
       PRIVATE
         ${LEVELDB_PLATFORM_NAME}=1
@@ -441,6 +451,7 @@ if(LEVELDB_BUILD_BENCHMARKS)
   if(HAVE_SQLITE3)
     leveldb_benchmark("benchmarks/db_bench_sqlite3.cc")
     target_link_libraries(db_bench_sqlite3 sqlite3)
+    target_link_options(db_bench_sqlite3 PRIVATE -sASSERTIONS)
   endif(HAVE_SQLITE3)
 
   # check_library_exists is insufficient here because the library names have
@@ -461,6 +472,7 @@ int main() {
   if(HAVE_KYOTOCABINET)
     leveldb_benchmark("benchmarks/db_bench_tree_db.cc")
     target_link_libraries(db_bench_tree_db kyotocabinet)
+    target_link_options(db_bench_tree_db PRIVATE -sASSERTIONS)
   endif(HAVE_KYOTOCABINET)
 endif(LEVELDB_BUILD_BENCHMARKS)
 

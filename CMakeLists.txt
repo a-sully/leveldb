@@ -67,30 +67,35 @@ else(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wstrict-prototypes")
   endif(NOT CMAKE_C_FLAGS MATCHES "-Wstrict-prototypes")
 
-  # Disable C++ exceptions.
-  #string(REGEX REPLACE "-fexceptions" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
-
   # Disable RTTI.
   string(REGEX REPLACE "-frtti" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+
+if (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+  # Create HTML executables for WASM to run from a browser.
+  set(CMAKE_EXECUTABLE_SUFFIX ".html")
 
   # Enable pthreads.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
   # Enable debug information.
+if (CMAKE_SYSTEM_NAME STREQUAL "Debug")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -gsource-map")
-endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  set(WASM_DEBUG_FLAGS -sASSERTIONS --source-map-base=http://localhost:5000/build/)
+endif(CMAKE_SYSTEM_NAME STREQUAL "Debug")
 
-# Create HTML executables for WASM to run from a browser.
-set(CMAKE_EXECUTABLE_SUFFIX ".html")
+  # Enable the OPFS by using WasmFS in a worker.
+  set(WASM_FLAGS -sALLOW_MEMORY_GROWTH -sWASMFS -sPROXY_TO_PTHREAD)
 
-# Enable the OPFS by using WasmFS in a worker.
-set(WASM_FLAGS -sALLOW_MEMORY_GROWTH -sWASMFS -sPROXY_TO_PTHREAD)
-set(WASM_DEBUG_FLAGS -sASSERTIONS --source-map-base=http://localhost:5000/build/)
-# Use PRIVATE link options to use these flags on specific executables, rather
-# than globally, where they would be unused in third_party targets.
-set(PRIVATE_TARGET_LINK_OPTIONS ${WASM_FLAGS} ${WASM_DEBUG_FLAGS})
+  # Use PRIVATE link options to use these flags on specific executables, rather
+  # than globally, where they would be unused in third_party targets.
+  set(PRIVATE_TARGET_LINK_OPTIONS ${WASM_FLAGS} ${WASM_DEBUG_FLAGS})
+else (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+  # Disable C++ exceptions.
+  string(REGEX REPLACE "-fexceptions" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
+endif(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
 
 # Test whether -Wthread-safety is available. See
 # https://clang.llvm.org/docs/ThreadSafetyAnalysis.html

@@ -324,40 +324,47 @@ add_custom_command(
 )
 add_custom_target(generate_webidl_glue DEPENDS ${WEBIDL_BINDER_OUTPUT})
 
-# Copy typescript files into build directory (where glue.js also lives), then generate .js.
-set(JS_API_INPUT
-  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/js-api/leveldb.ts"
-  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/js-api/leveldb_worker.ts"
-)
-set(JS_API_OUTPUT
-  "leveldb.js"
-  "leveldb_worker.js"
-)
-cmake_path(GET JS_API_INPUT FILENAME JS_API_FILENAMES)
-add_custom_command(
-  OUTPUT ${JS_API_OUTPUT}
-  DEPENDS ${WEBIDL_BINDER_OUTPUT}
-  DEPENDS ${JS_API_INPUT}
-  COMMAND cp ${JS_API_INPUT} ./
-  COMMAND npx tsc --module es6 --target es6 ${JS_API_FILENAMES}
-)
-add_custom_target(generate_js_from_ts DEPENDS ${JS_API_OUTPUT})
-
-# This library will need to be built by any app using leveldbwasm.
-add_library(leveldbwasm)
-add_dependencies(leveldbwasm generate_webidl_glue generate_js_from_ts)
+# Generate the leveldb wasm including glue.
+add_executable(leveldbwasm)
+add_dependencies(leveldbwasm generate_webidl_glue)
 target_sources(leveldbwasm
   PRIVATE
     "wasm/idl/dbwrapper.cc"
     "wasm/idl/dbwrapper.h"
 )
+target_link_options(leveldbwasm
+  PUBLIC --post-js glue.js -sMODULARIZE -sEXPORT_ES6 -s EXPORTED_FUNCTIONS=_malloc
+)
 target_link_libraries(leveldbwasm leveldb)
 
-set(DEMO_INPUT
-  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/demo/main.js"
-  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/demo/demo.html"
+# Copy typescript files into build directory (where glue.js also lives), then generate .js.
+set(JS_API_INPUT
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/js-api/leveldb_db.ts"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/js-api/leveldb_worker.ts"
 )
-cmake_path(GET DEMO_INPUT FILENAME DEMO_OUTPUT)
+set(JS_API_OUTPUT
+  "leveldb_db.js"
+  "leveldb_worker.js"
+)
+# Strip paths from filenames.
+set(JS_API_INPUT_STRIPPED ${JS_API_INPUT})
+list(TRANSFORM JS_API_INPUT_STRIPPED REPLACE ".*/" "")
+add_custom_command(
+  OUTPUT ${JS_API_OUTPUT}
+  DEPENDS ${WEBIDL_BINDER_OUTPUT}
+  DEPENDS ${JS_API_INPUT}
+  COMMAND cp ${JS_API_INPUT} ./
+  COMMAND npx tsc --module es6 --target es6 ${JS_API_INPUT_STRIPPED}
+)
+add_custom_target(generate_js_from_ts DEPENDS ${JS_API_OUTPUT})
+add_dependencies(generate_js_from_ts leveldbwasm)
+
+set(DEMO_INPUT
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/demo/demo.html"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/demo/main.js"
+)
+set(DEMO_OUTPUT ${DEMO_INPUT})
+list(TRANSFORM DEMO_OUTPUT REPLACE ".*/" "")
 
 add_custom_command(
   OUTPUT ${DEMO_OUTPUT}
@@ -365,7 +372,7 @@ add_custom_command(
   COMMAND cp ${DEMO_INPUT} ./
 )
 add_custom_target(leveldbwasmdemo DEPENDS ${DEMO_OUTPUT})
-add_dependencies(leveldbwasmdemo leveldbwasm)
+add_dependencies(leveldbwasmdemo generate_js_from_ts)
 ###### END IDL glue ######
 
 if(LEVELDB_BUILD_TESTS)

@@ -1,27 +1,22 @@
-import { LevelDb } from "./leveldb"
-import { DbWrapper } from "./glue.js"
+import Module from "./leveldbwasm.js"
 
 let databases = {}
-
+let moduleInstance = undefined;
 
 const handlers = {
   open([db]){
-    databases[db.getName()] = new DbWrapper(db.getName());
+    databases[db.dbName_] = new moduleInstance.DbWrapper(db.dbName_);
   },
 
   put([db, k, v]){
-    databases[db.getName()].put(k, v);
+    databases[db.dbName_].put(k, v);
   }
-}
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 onmessage = async (e) => {
-  while (true) {
-    console.log("did something");
-    await sleep(1000);
+  if (!moduleInstance) {
+    moduleInstance = await Module();
   }
+
   handlers[e.data[0]](e.data.slice(1));
 };

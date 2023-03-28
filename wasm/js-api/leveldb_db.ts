@@ -1,5 +1,3 @@
-
-
 /* Singleton */
 class LevelDbConnection {
     private static instance: LevelDbConnection;

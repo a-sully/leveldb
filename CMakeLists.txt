@@ -303,13 +303,31 @@ add_executable(leveldbutil
 target_link_libraries(leveldbutil leveldb)
 target_link_options(leveldbutil PRIVATE ${PRIVATE_TARGET_LINK_OPTIONS})
 
-add_executable(leveldbwasm)
+###### START IDL glue ######
+set(WEBIDL_BINDER_INPUT
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/idl/dbwrapper.idl"
+)
+
+set(WEBIDL_BINDER_OUTPUT
+  "glue.cpp"
+  "glue.js"
+)
+
+add_custom_command(
+  OUTPUT ${WEBIDL_BINDER_OUTPUT}
+  COMMAND ${CMAKE_SOURCE_DIR}/third_party/emsdk/upstream/emscripten/tools/webidl_binder ${WEBIDL_BINDER_INPUT} glue
+)
+add_custom_target(generate_webidl_glue DEPENDS ${WEBIDL_BINDER_OUTPUT})
+
+add_library(leveldbwasm)
+add_dependencies(leveldbwasm generate_webidl_glue)
 target_sources(leveldbwasm
   PRIVATE
     "wasm/idl/dbwrapper.cc"
     "wasm/idl/dbwrapper.h"
 )
 target_link_libraries(leveldbwasm leveldb)
+###### END IDL glue ######
 
 if(LEVELDB_BUILD_TESTS)
   enable_testing()

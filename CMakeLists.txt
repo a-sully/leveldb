@@ -334,7 +334,7 @@ add_custom_command(
   DEPENDS ${WEBIDL_BINDER_OUTPUT}
   DEPENDS ${JS_API_INPUT}
   COMMAND cp ${JS_API_INPUT} ./
-  COMMAND npx tsc ${JS_API_FILENAMES}
+  COMMAND npx tsc --module es6 --target es6 ${JS_API_FILENAMES}
 )
 add_custom_target(generate_js_from_ts DEPENDS ${JS_API_OUTPUT})
 

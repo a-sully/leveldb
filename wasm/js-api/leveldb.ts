@@ -12,7 +12,8 @@ class LevelDbConnection {
      */
     private constructor() {
       // Initialize worker
-      this.worker_ = new Worker('leveldb_worker.js');
+      this.worker_ = new Worker('leveldb_worker.js', { type: 'module' });
+      this.worker_.onerror = (event) => { console.log('Worker error ', event); };
     }
 
     /**

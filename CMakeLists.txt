@@ -304,29 +304,63 @@ target_link_libraries(leveldbutil leveldb)
 target_link_options(leveldbutil PRIVATE ${PRIVATE_TARGET_LINK_OPTIONS})
 
 ###### START IDL glue ######
+
+# Generate glue js and cpp via webidl_binder.
 set(WEBIDL_BINDER_INPUT
   "${CMAKE_CURRENT_SOURCE_DIR}/wasm/idl/dbwrapper.idl"
 )
-
 set(WEBIDL_BINDER_OUTPUT
   "glue.cpp"
   "glue.js"
 )
-
 add_custom_command(
   OUTPUT ${WEBIDL_BINDER_OUTPUT}
   COMMAND ${CMAKE_SOURCE_DIR}/third_party/emsdk/upstream/emscripten/tools/webidl_binder ${WEBIDL_BINDER_INPUT} glue
 )
 add_custom_target(generate_webidl_glue DEPENDS ${WEBIDL_BINDER_OUTPUT})
 
+# Copy typescript files into build directory (where glue.js also lives), then generate .js.
+set(JS_API_INPUT
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/js-api/leveldb.ts"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/js-api/leveldb_worker.ts"
+)
+set(JS_API_OUTPUT
+  "leveldb.js"
+  "leveldb_worker.js"
+)
+cmake_path(GET JS_API_INPUT FILENAME JS_API_FILENAMES)
+add_custom_command(
+  OUTPUT ${JS_API_OUTPUT}
+  DEPENDS ${WEBIDL_BINDER_OUTPUT}
+  DEPENDS ${JS_API_INPUT}
+  COMMAND cp ${JS_API_INPUT} ./
+  COMMAND npx tsc ${JS_API_FILENAMES}
+)
+add_custom_target(generate_js_from_ts DEPENDS ${JS_API_OUTPUT})
+
+# This library will need to be built by any app using leveldbwasm.
 add_library(leveldbwasm)
-add_dependencies(leveldbwasm generate_webidl_glue)
+add_dependencies(leveldbwasm generate_webidl_glue generate_js_from_ts)
 target_sources(leveldbwasm
   PRIVATE
     "wasm/idl/dbwrapper.cc"
     "wasm/idl/dbwrapper.h"
 )
 target_link_libraries(leveldbwasm leveldb)
+
+set(DEMO_INPUT
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/demo/main.js"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/demo/demo.html"
+)
+cmake_path(GET DEMO_INPUT FILENAME DEMO_OUTPUT)
+
+add_custom_command(
+  OUTPUT ${DEMO_OUTPUT}
+  DEPENDS ${DEMO_INPUT}
+  COMMAND cp ${DEMO_INPUT} ./
+)
+add_custom_target(leveldbwasmdemo DEPENDS ${DEMO_OUTPUT})
+add_dependencies(leveldbwasmdemo leveldbwasm)
 ###### END IDL glue ######
 
 if(LEVELDB_BUILD_TESTS)

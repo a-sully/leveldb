@@ -1,4 +1,5 @@
 import { LevelDb } from "./leveldb"
+import { DbWrapper } from "./glue.js"
 
 let databases = {}
 

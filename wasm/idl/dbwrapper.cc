@@ -7,11 +7,16 @@
 #include "dbwrapper.h"
 
 #include "glue.cpp"
+#include "include/leveldb/db.h"
 
-DbWrapper::DbWrapper(std::string name) : name_(name) {}
-DbWrapper::~DbWrapper() = default;
+DbWrapper::DbWrapper(std::string name) {
+  leveldb::DB::Open({}, name, &db_);
+}
+DbWrapper::~DbWrapper() {
+  delete db_;
+}
 
 void DbWrapper::put(std::string k, std::string v) {
   // FIXME
-  std::cout << "Key: " << k << ", value: " << v << " for db " << name_;
+  std::cout << "Key: " << k << ", value: " << v;
 }

@@ -5,6 +5,10 @@
 #ifndef DB_WRAPPER_H_
 #define DB_WRAPPER_H_
 
+namespace leveldb {
+class DB;
+}
+
 class DbWrapper {
  public:
   DbWrapper(std::string name);
@@ -13,7 +17,7 @@ class DbWrapper {
   void put(std::string k, std::string v);
 
  private:
-  std::string name_;
+  leveldb::DB* db_;
 };
 
 #endif  // DB_WRAPPER_H_

@@ -74,7 +74,7 @@ endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
 if (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
   # Create HTML executables for WASM to run from a browser.
-  set(CMAKE_EXECUTABLE_SUFFIX ".html")
+  #set(CMAKE_EXECUTABLE_SUFFIX ".html")
 
   # Enable pthreads.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
@@ -333,7 +333,7 @@ target_sources(leveldbwasm
     "wasm/idl/dbwrapper.h"
 )
 target_link_options(leveldbwasm
-  PUBLIC --post-js glue.js -sMODULARIZE -sEXPORT_ES6 -s EXPORTED_FUNCTIONS=_malloc
+  PUBLIC --post-js glue.js -sMODULARIZE -sEXPORT_ES6 -sEXPORTED_FUNCTIONS=_malloc -sALLOW_MEMORY_GROWTH -sWASMFS
 )
 target_link_libraries(leveldbwasm leveldb)
 

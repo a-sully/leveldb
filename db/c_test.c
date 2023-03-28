@@ -371,6 +371,7 @@ int main(int argc, char** argv) {
 
   StartPhase("cleanup");
   leveldb_close(db);
+  leveldb_destroy_db(options, dbname, &err);
   leveldb_options_destroy(options);
   leveldb_readoptions_destroy(roptions);
   leveldb_writeoptions_destroy(woptions);

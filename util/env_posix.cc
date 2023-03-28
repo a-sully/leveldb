@@ -28,6 +28,11 @@
 #include <type_traits>
 #include <utility>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/console.h>
+#include <emscripten/wasmfs.h>
+#endif
+
 #include "leveldb/env.h"
 #include "leveldb/slice.h"
 #include "leveldb/status.h"
@@ -466,6 +471,11 @@ class PosixWritableFile final : public WritableFile {
 
 int LockOrUnlock(int fd, bool lock) {
   errno = 0;
+#ifdef __EMSCRIPTEN__
+  // OPFS access handles are exclusive, so all open file descriptors hold a
+  // lock.
+  return 0;
+#else
   struct ::flock file_lock_info;
   std::memset(&file_lock_info, 0, sizeof(file_lock_info));
   file_lock_info.l_type = (lock ? F_WRLCK : F_UNLCK);
@@ -473,6 +483,7 @@ int LockOrUnlock(int fd, bool lock) {
   file_lock_info.l_start = 0;
   file_lock_info.l_len = 0;  // Lock/unlock entire file.
   return ::fcntl(fd, F_SETLK, &file_lock_info);
+#endif  // __EMSCRIPTEN__
 }
 
 // Instances are thread-safe because they are immutable.
@@ -698,6 +709,12 @@ class PosixEnv : public Env {
   }
 
   Status GetTestDirectory(std::string* result) override {
+#if defined(__EMSCRIPTEN__)
+    char buf[100];
+    std::snprintf(buf, sizeof(buf), "/opfs/leveldbtest-%d",
+                  static_cast<int>(::geteuid()));
+    *result = buf;
+#else
     const char* env = std::getenv("TEST_TMPDIR");
     if (env && env[0] != '\0') {
       *result = env;
@@ -707,6 +724,7 @@ class PosixEnv : public Env {
                     static_cast<int>(::geteuid()));
       *result = buf;
     }
+#endif  // defined(__EMSCRIPTEN__)
 
     // The CreateDir status is ignored because the directory may already exist.
     CreateDir(*result);
@@ -809,7 +827,18 @@ PosixEnv::PosixEnv()
     : background_work_cv_(&background_work_mutex_),
       started_background_thread_(false),
       mmap_limiter_(MaxMmaps()),
-      fd_limiter_(MaxOpenFiles()) {}
+      fd_limiter_(MaxOpenFiles()) {
+#if defined(__EMSCRIPTEN__)
+  backend_t opfs = wasmfs_create_opfs_backend();
+  emscripten_console_log("created OPFS backend");
+
+  int err = wasmfs_create_directory("/opfs", 0777, opfs);
+  if (err != 0) {
+    std::abort();
+  }
+  emscripten_console_log("mounted OPFS root directory");
+#endif  // defined(__EMSCRIPTEN__)
+}
 
 void PosixEnv::Schedule(
     void (*background_work_function)(void* background_work_arg),

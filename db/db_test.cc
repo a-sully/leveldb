@@ -267,7 +267,11 @@ class DBTest : public testing::Test {
 
   DBTest() : env_(new SpecialEnv(Env::Default())), option_config_(kDefault) {
     filter_policy_ = NewBloomFilterPolicy(10);
+#if defined(__EMSCRIPTEN__)
+    dbname_ = "/opfs/db_test";
+#else
     dbname_ = testing::TempDir() + "db_test";
+#endif
     DestroyDB(dbname_, Options());
     db_ = nullptr;
     Reopen();

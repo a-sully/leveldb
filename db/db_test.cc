@@ -1711,6 +1711,8 @@ TEST_F(DBTest, DBOpen_Options) {
 
   delete db;
   db = nullptr;
+
+  DestroyDB(dbname, Options());
 }
 
 TEST_F(DBTest, DestroyEmptyDir) {

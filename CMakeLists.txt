@@ -313,7 +313,7 @@ target_link_libraries(leveldbutil leveldb)
 target_link_options(leveldbutil PRIVATE ${PRIVATE_TARGET_LINK_OPTIONS})
 
 ###### START IDL glue ######
-
+if (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
 # Generate glue js and cpp via webidl_binder.
 set(WEBIDL_BINDER_INPUT
   "${CMAKE_CURRENT_SOURCE_DIR}/wasm/idl/interface.idl"
@@ -381,6 +381,7 @@ add_custom_command(
 )
 add_custom_target(leveldbwasmdemo DEPENDS ${DEMO_OUTPUT})
 add_dependencies(leveldbwasmdemo generate_js_from_ts)
+endif (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
 ###### END IDL glue ######
 
 if(LEVELDB_BUILD_TESTS)

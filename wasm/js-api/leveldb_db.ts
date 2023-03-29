@@ -75,4 +75,8 @@ export class LevelDb {
     public put(k: String, v: String) {
       return LevelDbConnection.getInstance().postMessage(['put', this, k, v]);
     }
+
+    public get(k: String) {
+      return LevelDbConnection.getInstance().postMessage(['get', this, k]);
+    }
 }

@@ -5,10 +5,17 @@
 #include "dbwrapper.h"
 
 #include "include/leveldb/db.h"
+#include "include/leveldb/status.h"
 
 DbWrapper::DbWrapper(const char* name) {
-  leveldb::DB::Open({}, name, &db_);
+  leveldb::Options options;
+  options.create_if_missing = true;
+  auto status = leveldb::DB::Open(options, name, &db_);
+  if (!status.ok())
+    printf("DB::Open not alright: %s\n", status.ToString().c_str());
+  status_ = status;
 }
+
 DbWrapper::~DbWrapper() {
   delete db_;
 }

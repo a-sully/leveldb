@@ -8,3 +8,10 @@ try {
 } catch (e) {
   console.log(e);
 }
+
+try {
+  let value = await db.get('key');
+  console.log('Gotten value should be [value] and is [' + value + ']');
+} catch (e) {
+  console.log(e);
+}

@@ -1672,7 +1672,9 @@ TEST_F(DBTest, ManualCompaction) {
 }
 
 TEST_F(DBTest, DBOpen_Options) {
-  std::string dbname = testing::TempDir() + "db_options_test";
+  std::string dbname;
+  env_->GetTestDirectory(&dbname);
+  dbname += "/db_options_test";
   DestroyDB(dbname, Options());
 
   // Does not exist, and create_if_missing == false: error
@@ -1713,8 +1715,10 @@ TEST_F(DBTest, DBOpen_Options) {
 }
 
 TEST_F(DBTest, DestroyEmptyDir) {
-  std::string dbname = testing::TempDir() + "db_empty_dir";
   TestEnv env(Env::Default());
+  std::string dbname;
+  env->GetTestDirectory(&dbname);
+  dbname += "/db_empty_dir";
   env.RemoveDir(dbname);
   ASSERT_TRUE(!env.FileExists(dbname));
 
@@ -1741,7 +1745,9 @@ TEST_F(DBTest, DestroyEmptyDir) {
 }
 
 TEST_F(DBTest, DestroyOpenDB) {
-  std::string dbname = testing::TempDir() + "open_db_dir";
+  std::string dbname;
+  env_->GetTestDirectory(&dbname);
+  dbname += "/open_db_dir";
   env_->RemoveDir(dbname);
   ASSERT_TRUE(!env_->FileExists(dbname));
 

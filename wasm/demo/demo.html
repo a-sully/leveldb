@@ -5,6 +5,21 @@
 </head>
 <body>
 <p>
+    <span style="font-weight: bold;">Import a LevelDB database from your local file system</span><br>
+    <i>&ensp;Note: a LevelDB database is stored as a number of files within a directory</i><br>
+    <button type="button" id="open_button">Open a local LevelDB database</button><br>
+</p>
+<p>
+    <span style="font-weight: bold;">Export the LevelDB database to your local file system</span><br>
+    <i>&ensp;Note: this will clear any existing files in the directory</i><br>
+    <button type="button" id="save_button">Save to the previously selected directory</button><br>
+    <button type="button" id="save_elsewhere_button">Save somewhere else</button><br>
+</p>
+<p>
+    <span style="font-weight: bold;">Clear cached database</span><br>
+    <button type="button" id="clear_button">Clear</button><br>
+</p>
+<p>
     <span style="font-weight: bold;">Get:</span><br>
     <label for="get_key">Key: </label><input id="get_key" type="text"><br>
     <input id="get" type="button" value="Get"><br>

@@ -15,10 +15,10 @@ class LevelDbConnection {
       // Initialize worker
       this.worker_ = new Worker('leveldb_worker.js', { type: 'module' });
       this.worker_.onerror = (event) => { console.log('Worker error ', event); };
-      this.worker_.onmessage = (data) => {
-        let messageId = data[0];
-        if (data[1])
-          this.promises_[messageId].resolve(data[2]);
+      this.worker_.onmessage = (event) => {
+        let messageId = event.data[0];
+        if (event.data[1])
+          this.promises_[messageId].resolve(event.data[2]);
         else
           this.promises_[messageId].reject('Status not ok');
         delete this.promises_[messageId];

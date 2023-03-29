@@ -13,7 +13,7 @@ const handlers = {
   },
 
   get([db, k]){
-    databases[db.dbName_].get(k);
+    return databases[db.dbName_].get(k);
   },
 
   delete([db, k]){

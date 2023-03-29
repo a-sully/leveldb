@@ -25,8 +25,8 @@ const handlers = {
       return {result, ok};
     },
 
-    delete(db, k: String) {
-      databases[db.dbName_].delete(k);
+    remove(db, k: String) {
+      databases[db.dbName_].remove(k);
       const ok = databases[db.dbName_].getLastStatus().ok();
       return {ok};
     },

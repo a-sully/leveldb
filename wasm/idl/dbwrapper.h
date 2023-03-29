@@ -14,14 +14,14 @@ class DB;
 
 class DbWrapper {
  public:
-  explicit DbWrapper(std::string name);
+  explicit DbWrapper(const char* name);
   ~DbWrapper();
 
   const Status& getLastStatus();
 
-  void put(std::string k, std::string v);
-  void remove(std::string k);
-  const char* get(std::string k);
+  void put(const char* k, const char* v);
+  void remove(const char* k);
+  const char* get(const char* k);
 
  private:
   leveldb::DB* db_ = nullptr;

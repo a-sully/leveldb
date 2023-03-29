@@ -6,22 +6,22 @@
 
 #include "include/leveldb/db.h"
 
-DbWrapper::DbWrapper(std::string name) {
+DbWrapper::DbWrapper(const char* name) {
   leveldb::DB::Open({}, name, &db_);
 }
 DbWrapper::~DbWrapper() {
   delete db_;
 }
 
-void DbWrapper::put(std::string k, std::string v) {
+void DbWrapper::put(const char* k, const char* v) {
   status_ = db_->Put({}, k, v);
 }
 
-void DbWrapper::remove(std::string k) {
+void DbWrapper::remove(const char* k) {
   status_ = db_->Delete({}, k);
 }
 
-const char* DbWrapper::get(std::string k) {
+const char* DbWrapper::get(const char* k) {
   status_ = db_->Get({}, k, &value_);
   return value_.c_str();
 }

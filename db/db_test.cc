@@ -1720,7 +1720,7 @@ TEST_F(DBTest, DBOpen_Options) {
 TEST_F(DBTest, DestroyEmptyDir) {
   TestEnv env(Env::Default());
   std::string dbname;
-  env->GetTestDirectory(&dbname);
+  env.GetTestDirectory(&dbname);
   dbname += "/db_empty_dir";
   env.RemoveDir(dbname);
   ASSERT_TRUE(!env.FileExists(dbname));

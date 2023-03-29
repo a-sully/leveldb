@@ -30,7 +30,11 @@ std::string MakeKey(unsigned int num) {
 void BM_LogAndApply(benchmark::State& state) {
   const int num_base_files = state.range(0);
 
-  std::string dbname = testing::TempDir() + "leveldb_test_benchmark";
+  Env* env = Env::Default();
+  std::string dbname;
+  env->GetTestDirectory(&dbname);
+  dbname += "/leveldb_test_benchmark"
+
   DestroyDB(dbname, Options());
 
   DB* db = nullptr;
@@ -42,8 +46,6 @@ void BM_LogAndApply(benchmark::State& state) {
 
   delete db;
   db = nullptr;
-
-  Env* env = Env::Default();
 
   port::Mutex mu;
   MutexLock l(&mu);

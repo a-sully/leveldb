@@ -63,6 +63,10 @@ constexpr const int kOpenBaseFlags = 0;
 
 constexpr const size_t kWritableFileBufferSize = 65536;
 
+#ifdef __EMSCRIPTEN__
+constexpr const char kOpfsMountRoot[] = "/opfs";
+#endif
+
 Status PosixError(const std::string& context, int error_number) {
   if (error_number == ENOENT) {
     return Status::NotFound(context, std::strerror(error_number));
@@ -709,12 +713,6 @@ class PosixEnv : public Env {
   }
 
   Status GetTestDirectory(std::string* result) override {
-#if defined(__EMSCRIPTEN__)
-    char buf[100];
-    std::snprintf(buf, sizeof(buf), "/opfs/leveldbtest-%d",
-                  static_cast<int>(::geteuid()));
-    *result = buf;
-#else
     const char* env = std::getenv("TEST_TMPDIR");
     if (env && env[0] != '\0') {
       *result = env;
@@ -724,10 +722,14 @@ class PosixEnv : public Env {
                     static_cast<int>(::geteuid()));
       *result = buf;
     }
-#endif  // defined(__EMSCRIPTEN__)
 
     // The CreateDir status is ignored because the directory may already exist.
     CreateDir(*result);
+
+#if defined(__EMSCRIPTEN__)
+  emscripten_console_log("test directory:");
+  emscripten_console_log(result->c_str());
+#endif  // defined(__EMSCRIPTEN__)
 
     return Status::OK();
   }
@@ -821,6 +823,15 @@ int MaxOpenFiles() {
   return g_open_read_only_file_limit;
 }
 
+
+#if defined(__EMSCRIPTEN__)
+std::string GetOpfsTempDir() {
+  char buf[100];
+  std::snprintf(buf, sizeof(buf), "%s/leveldbtest", kOpfsMountRoot);
+  return buf;
+}
+#endif  // defined(__EMSCRIPTEN__)
+
 }  // namespace
 
 PosixEnv::PosixEnv()
@@ -832,11 +843,14 @@ PosixEnv::PosixEnv()
   backend_t opfs = wasmfs_create_opfs_backend();
   emscripten_console_log("created OPFS backend");
 
-  int err = wasmfs_create_directory("/opfs", 0777, opfs);
+  int err = wasmfs_create_directory(kOpfsMountRoot, 0777, opfs);
   if (err != 0) {
     std::abort();
   }
   emscripten_console_log("mounted OPFS root directory");
+
+  // Set the test dir to within the OPFS.
+  setenv("TEST_TMPDIR", GetOpfsTempDir().c_str(), /*overwrite=*/1);
 #endif  // defined(__EMSCRIPTEN__)
 }
 

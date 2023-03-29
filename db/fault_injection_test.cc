@@ -376,7 +376,8 @@ class FaultInjectionTest : public testing::Test {
       : env_(new FaultInjectionTestEnv),
         tiny_cache_(NewLRUCache(100)),
         db_(nullptr) {
-    dbname_ = testing::TempDir() + "fault_test";
+    env_->GetTestDirectory(&dbname_);
+    dbname_ += "/fault_test";
     DestroyDB(dbname_, Options());  // Destroy any db from earlier run
     options_.reuse_logs = true;
     options_.env = env_;

@@ -193,15 +193,17 @@ TEST_F(MemEnvTest, LargeWrite) {
 TEST_F(MemEnvTest, OverwriteOpenFile) {
   const char kWrite1Data[] = "Write #1 data";
   const size_t kFileDataLen = sizeof(kWrite1Data) - 1;
-  const std::string kTestFileName = testing::TempDir() + "leveldb-TestFile.dat";
+  std::string test_file_name;
+  env_->GetTestDirectory(&test_file_name);
+  test_file_name += "/leveldb-TestFile.dat";
 
-  ASSERT_LEVELDB_OK(WriteStringToFile(env_, kWrite1Data, kTestFileName));
+  ASSERT_LEVELDB_OK(WriteStringToFile(env_, kWrite1Data, test_file_name));
 
   RandomAccessFile* rand_file;
-  ASSERT_LEVELDB_OK(env_->NewRandomAccessFile(kTestFileName, &rand_file));
+  ASSERT_LEVELDB_OK(env_->NewRandomAccessFile(test_file_name, &rand_file));
 
   const char kWrite2Data[] = "Write #2 data";
-  ASSERT_LEVELDB_OK(WriteStringToFile(env_, kWrite2Data, kTestFileName));
+  ASSERT_LEVELDB_OK(WriteStringToFile(env_, kWrite2Data, test_file_name));
 
   // Verify that overwriting an open file will result in the new file data
   // being read from files opened before the write.

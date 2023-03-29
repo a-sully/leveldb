@@ -8,13 +8,16 @@
 
 #include "gtest/gtest.h"
 #include "leveldb/db.h"
+#include "leveldb/env.h"
 #include "util/testutil.h"
 
 namespace leveldb {
 
 TEST(Issue200, Test) {
   // Get rid of any state from an old run.
-  std::string dbpath = testing::TempDir() + "leveldb_issue200_test";
+  std::string dbpath;
+  Env::Default()->GetTestDirectory(&dbpath);
+  dbpath += "/leveldb_issue200_test";
   DestroyDB(dbpath, Options());
 
   DB* db;

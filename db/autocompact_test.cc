@@ -6,6 +6,7 @@
 #include "db/db_impl.h"
 #include "leveldb/cache.h"
 #include "leveldb/db.h"
+#include "leveldb/env.h"
 #include "util/testutil.h"
 
 namespace leveldb {
@@ -13,7 +14,8 @@ namespace leveldb {
 class AutoCompactTest : public testing::Test {
  public:
   AutoCompactTest() {
-    dbname_ = testing::TempDir() + "autocompact_test";
+    Env::Default()->GetTestDirectory(&dbname_);
+    dbname_ += "/autocompact_test";
     tiny_cache_ = NewLRUCache(100);
     options_.block_cache = tiny_cache_;
     DestroyDB(dbname_, options_);

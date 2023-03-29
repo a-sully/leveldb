@@ -11,6 +11,7 @@
 
 #include "gtest/gtest.h"
 #include "leveldb/db.h"
+#include "leveldb/env.h"
 #include "leveldb/write_batch.h"
 #include "util/testutil.h"
 
@@ -52,7 +53,9 @@ TEST(Issue320, Test) {
   Options options;
   options.create_if_missing = true;
 
-  std::string dbpath = testing::TempDir() + "leveldb_issue320_test";
+  std::string dbpath;
+  Env::Default()->GetTestDirectory(&dbpath);
+  dbpath += "/leveldb_issue320_test";
   ASSERT_LEVELDB_OK(DB::Open(options, dbpath, &db));
 
   uint32_t target_size = 10000;

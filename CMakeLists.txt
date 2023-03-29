@@ -405,6 +405,37 @@ add_custom_command(
 )
 add_custom_target(leveldbwasmdemo DEPENDS ${DEMO_OUTPUT})
 add_dependencies(leveldbwasmdemo leveldbwasmdemo_js)
+
+### Benchmark ###
+set(IDBKV
+  "${CMAKE_CURRENT_SOURCE_DIR}/third_party/idb-keyval/src/index.ts"
+)
+set(IDBKV_OUTPUT
+  "idbkv.js"
+)
+add_custom_command(
+  OUTPUT ${IDBKV_OUTPUT}
+  DEPENDS ${IDBKV}
+  COMMAND npx tsc ${IDBKV} --outDir idbkv --module es6 --target es6
+)
+
+set(BENCHMARK_INPUT
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/benchmark/benchmark.html"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/benchmark/benchmark.js"
+)
+set(BENCHMARK_OUTPUT ${BENCHMARK_INPUT})
+list(TRANSFORM BENCHMARK_OUTPUT REPLACE ".*/" "")
+add_custom_command(
+  OUTPUT ${BENCHMARK_OUTPUT}
+  DEPENDS ${BENCHMARK_INPUT}
+  COMMAND cp ${BENCHMARK_INPUT} ./
+)
+
+add_custom_target(leveldbwasmbench
+  DEPENDS ${IDBKV_OUTPUT}
+  DEPENDS ${BENCHMARK_OUTPUT})
+add_dependencies(leveldbwasmbench generate_js_from_ts)
+>>>>>>> aaeb13e (Add basic benchmark with one test that only works on idbkv)
 endif (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
 ###### END IDL glue ######
 

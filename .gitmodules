@@ -7,3 +7,6 @@
 [submodule "third_party/emsdk"]
 	path = third_party/emsdk
 	url = https://github.com/emscripten-core/emsdk.git
+[submodule "third_party/idb-keyval"]
+	path = third_party/idb-keyval
+	url = https://github.com/jakearchibald/idb-keyval.git

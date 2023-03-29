@@ -17,14 +17,15 @@ class DbWrapper {
   explicit DbWrapper(std::string name);
   ~DbWrapper();
 
-  const Status& getLastStatus();
+  Status* getLastStatus();
 
   void put(std::string k, std::string v);
   void remove(std::string k);
-  std::string get(std::string k);
+  const char* get(std::string k);
 
  private:
   leveldb::DB* db_ = nullptr;
+  std::string value_;
   Status status_;
 };
 

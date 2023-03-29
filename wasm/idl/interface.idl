@@ -16,7 +16,7 @@ interface DbWrapper {
 
   void remove(DOMString k);
 
-  DOMString get(DOMString k);
+  [Const] DOMString get(DOMString k);
 
-  [Ref] Status getLastStatus();
+  Status getLastStatus();
 };

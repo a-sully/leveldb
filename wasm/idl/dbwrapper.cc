@@ -21,12 +21,11 @@ void DbWrapper::remove(std::string k) {
   status_ = db_->Delete({}, k);
 }
 
-std::string DbWrapper::get(std::string k) {
-  std::string value;
-  status_ = db_->Get({}, k, &value);
-  return value;
+const char* DbWrapper::get(std::string k) {
+  status_ = db_->Get({}, k, &value_);
+  return value_.c_str();
 }
 
-const Status& DbWrapper::getLastStatus() {
-  return status_;
+Status* DbWrapper::getLastStatus() {
+  return &status_;
 }

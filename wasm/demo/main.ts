@@ -1,6 +1,6 @@
 import { LevelDb } from './leveldb_db.js';
 
-const db = new LevelDb('hello_world');
+const db = new LevelDb('/opfs/db');
 
 const getButton = document.getElementById('get');
 getButton.addEventListener('click', async () => {

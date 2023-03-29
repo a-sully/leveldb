@@ -2,11 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include <iostream>
-
 #include "dbwrapper.h"
 
-#include "glue.cpp"
 #include "include/leveldb/db.h"
 
 DbWrapper::DbWrapper(std::string name) {
@@ -17,6 +14,19 @@ DbWrapper::~DbWrapper() {
 }
 
 void DbWrapper::put(std::string k, std::string v) {
-  // FIXME
-  std::cout << "Key: " << k << ", value: " << v;
+  status_ = db_->Put({}, k, v);
+}
+
+void DbWrapper::remove(std::string k) {
+  status_ = db_->Delete({}, k);
+}
+
+std::string DbWrapper::get(std::string k) {
+  std::string value;
+  status_ = db_->Get({}, k, &value);
+  return value;
+}
+
+const Status& DbWrapper::getLastStatus() {
+  return status_;
 }

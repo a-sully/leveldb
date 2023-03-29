@@ -312,7 +312,7 @@ target_link_options(leveldbutil PRIVATE ${PRIVATE_TARGET_LINK_OPTIONS})
 
 # Generate glue js and cpp via webidl_binder.
 set(WEBIDL_BINDER_INPUT
-  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/idl/dbwrapper.idl"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/idl/interface.idl"
 )
 set(WEBIDL_BINDER_OUTPUT
   "glue.cpp"
@@ -329,8 +329,11 @@ add_executable(leveldbwasm)
 add_dependencies(leveldbwasm generate_webidl_glue)
 target_sources(leveldbwasm
   PRIVATE
+    "wasm/idl/glue_wrapper.cc"
     "wasm/idl/dbwrapper.cc"
     "wasm/idl/dbwrapper.h"
+    "wasm/idl/status.cc"
+    "wasm/idl/status.h"
 )
 target_link_options(leveldbwasm
   PUBLIC --post-js glue.js -sMODULARIZE -sEXPORT_ES6 -sEXPORTED_FUNCTIONS=_malloc -sALLOW_MEMORY_GROWTH -sWASMFS

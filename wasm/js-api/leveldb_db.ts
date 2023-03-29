@@ -2,6 +2,9 @@
 class LevelDbConnection {
     private static instance: LevelDbConnection;
 
+    private promises_ = {};
+    private nextMessageId: number = 0;
+
     private worker_: Worker;
 
     /**
@@ -12,6 +15,14 @@ class LevelDbConnection {
       // Initialize worker
       this.worker_ = new Worker('leveldb_worker.js', { type: 'module' });
       this.worker_.onerror = (event) => { console.log('Worker error ', event); };
+      this.worker_.onmessage = (data) => {
+        let messageId = data[0];
+        if (data[1])
+          this.promises_[messageId].resolve(data[2]);
+        else
+          this.promises_[messageId].reject('Status not ok');
+        delete this.promises_[messageId];
+      };
     }
 
     /**
@@ -35,6 +46,18 @@ class LevelDbConnection {
     public getWorker() : Worker {
       return this.worker_;
     }
+
+    public postMessage(arr) : Promise<any> {
+      let messageId = ++this.nextMessageId;
+      arr.unshift(messageId);
+      let promise = new Promise((resolve, reject) => {
+        this.promises_[messageId] = {};
+        this.promises_[messageId].resolve = resolve;
+        this.promises_[messageId].reject = reject;
+        this.worker_.postMessage(arr);
+      });
+      return promise;
+    }
 }
 
 export class LevelDb {
@@ -46,14 +69,10 @@ export class LevelDb {
       this.id_ = ++LevelDb.nextId;
       this.dbName_ = dbName;
 
-      LevelDbConnection.getInstance().getWorker().postMessage(['open', this]);
+      LevelDbConnection.getInstance().postMessage(['open', this]);
     }
 
     public put(k: String, v: String) {
-      LevelDbConnection.getInstance().getWorker().postMessage(['put', this, k, v]);
-    }
-
-    public getName(): String {
-      return this.dbName_;
+      return LevelDbConnection.getInstance().postMessage(['put', this, k, v]);
     }
 }

@@ -1,0 +1,22 @@
+// Copyright 2023 The LevelDBWasb Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
+// It seems WebIDL Binder recommends a single `.idl`, output file, etc.
+
+interface Status {
+  void Status();
+  boolean ok();
+};
+
+interface DbWrapper {
+  void DbWrapper(DOMString name);
+
+  void put(DOMString k, DOMString v);
+
+  void remove(DOMString k);
+
+  DOMString get(DOMString k);
+
+  [Ref] Status getLastStatus();
+};

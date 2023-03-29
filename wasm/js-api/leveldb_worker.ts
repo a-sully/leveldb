@@ -10,7 +10,15 @@ const handlers = {
 
   put([db, k, v]){
     databases[db.dbName_].put(k, v);
-  }
+  },
+
+  get([db, k]){
+    databases[db.dbName_].get(k);
+  },
+
+  delete([db, k]){
+    databases[db.dbName_].delete(k);
+  },
 }
 
 onmessage = async (e) => {
@@ -18,5 +26,8 @@ onmessage = async (e) => {
     moduleInstance = await Module();
   }
 
-  handlers[e.data[0]](e.data.slice(1));
+  let messageId = e.data[0];
+  let value = handlers[e.data[1]](e.data.slice(2));
+  let ok = databases[e.data[2].dbName_].getLastStatus().ok();
+  postMessage([messageId, ok, value]);
 };

@@ -13,12 +13,12 @@ class LevelDbConnection {
      */
     private constructor() {
       // Initialize worker
-      this.worker_ = new Worker('leveldb_worker.js', { type: 'module' });
-      this.worker_.onerror = (event) => { console.log('Worker error ', event); };
+      this.worker_ = new Worker('leveldb_worker.js', {type: 'module'});
+      this.worker_.onerror = (event) => {console.log('Worker error ', event);};
       this.worker_.onmessage = (event) => {
-        let messageId = event.data[0];
-        if (event.data[1])
-          this.promises_[messageId].resolve(event.data[2]);
+        let [messageId, success, result] = event.data;
+        if (success)
+          this.promises_[messageId].resolve(result);
         else
           this.promises_[messageId].reject('Status not ok');
         delete this.promises_[messageId];
@@ -47,36 +47,38 @@ class LevelDbConnection {
       return this.worker_;
     }
 
-    public postMessage(arr) : Promise<any> {
-      let messageId = ++this.nextMessageId;
-      arr.unshift(messageId);
+    public postMessage(db: LevelDb, message: string, ...args): Promise<any> {
+      const messageId = ++this.nextMessageId;
       let promise = new Promise((resolve, reject) => {
-        this.promises_[messageId] = {};
-        this.promises_[messageId].resolve = resolve;
-        this.promises_[messageId].reject = reject;
-        this.worker_.postMessage(arr);
+        this.promises_[messageId] = {resolve, reject};
+        this.worker_.postMessage([messageId, db, message, ...args]);
       });
       return promise;
     }
 }
 
 export class LevelDb {
+    private CLASS_NAME: string = this.constructor.name;
     private static nextId: number = 0;
     private id_: number;
-    private dbName_: String;
+    private dbName_: string;
 
-    public constructor(dbName: String) {
+    public constructor(dbName: string) {
       this.id_ = ++LevelDb.nextId;
       this.dbName_ = dbName;
 
-      LevelDbConnection.getInstance().postMessage(['open', this]);
+      LevelDbConnection.getInstance().postMessage(this, 'open');
     }
 
-    public put(k: String, v: String) {
-      return LevelDbConnection.getInstance().postMessage(['put', this, k, v]);
+    public getName(): string {
+      return this.dbName_;
     }
 
-    public get(k: String) {
-      return LevelDbConnection.getInstance().postMessage(['get', this, k]);
+    public put(k: string, v: string) {
+      return LevelDbConnection.getInstance().postMessage(this, 'put', k, v);
+    }
+
+    public get(k: string) {
+      return LevelDbConnection.getInstance().postMessage(this, 'get', k);
     }
 }

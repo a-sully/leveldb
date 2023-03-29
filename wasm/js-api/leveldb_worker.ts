@@ -1,23 +1,33 @@
 import Module from "./leveldbwasm.js"
 
-let databases = {}
+const databases = {}
 let moduleInstance = undefined;
 
 const handlers = {
-  open([db]){
-    databases[db.dbName_] = new moduleInstance.DbWrapper(db.dbName_);
-  },
+  LevelDb: {
+    open(db) {
+      databases[db.dbName_] = new moduleInstance.DbWrapper(db.dbName_);
+      const ok = databases[db.dbName_].getLastStatus().ok();
+      return {ok};
+    },
 
-  put([db, k, v]){
-    databases[db.dbName_].put(k, v);
-  },
+    put(db, k: String, v: String) {
+      databases[db.dbName_].put(k, v);
+      const ok = databases[db.dbName_].getLastStatus().ok();
+      return {ok};
+    },
 
-  get([db, k]){
-    return databases[db.dbName_].get(k);
-  },
+    get(db, k: String) {
+      const result = databases[db.dbName_].get(k);
+      const ok = databases[db.dbName_].getLastStatus().ok();
+      return {result, ok};
+    },
 
-  delete([db, k]){
-    databases[db.dbName_].delete(k);
+    delete(db, k: String) {
+      databases[db.dbName_].delete(k);
+      const ok = databases[db.dbName_].getLastStatus().ok();
+      return {ok};
+    },
   },
 }
 
@@ -26,8 +36,12 @@ onmessage = async (e) => {
     moduleInstance = await Module();
   }
 
-  let messageId = e.data[0];
-  let value = handlers[e.data[1]](e.data.slice(2));
-  let ok = databases[e.data[2].dbName_].getLastStatus().ok();
-  postMessage([messageId, ok, value]);
+  if (e.data.length < 3) {
+    throw new Error("Message must contain messageId, targetObj, and messageName");
+  }
+
+  const [messageId, targetObj, messageName, ...args] = e.data;
+
+  const {result, ok} = handlers[targetObj.CLASS_NAME][messageName](targetObj, ...args);
+  postMessage([messageId, ok, result]);
 };

@@ -726,11 +726,6 @@ class PosixEnv : public Env {
     // The CreateDir status is ignored because the directory may already exist.
     CreateDir(*result);
 
-#if defined(__EMSCRIPTEN__)
-  emscripten_console_log("test directory:");
-  emscripten_console_log(result->c_str());
-#endif  // defined(__EMSCRIPTEN__)
-
     return Status::OK();
   }
 
@@ -850,7 +845,11 @@ PosixEnv::PosixEnv()
   emscripten_console_log("mounted OPFS root directory");
 
   // Set the test dir to within the OPFS.
-  setenv("TEST_TMPDIR", GetOpfsTempDir().c_str(), /*overwrite=*/1);
+  std::string test_dir = GetOpfsTempDir();
+  setenv("TEST_TMPDIR", test_dir.c_str(), /*overwrite=*/1);
+
+  emscripten_console_log("running tests in directory: ");
+  emscripten_console_log(test_dir.c_str());
 #endif  // defined(__EMSCRIPTEN__)
 }
 

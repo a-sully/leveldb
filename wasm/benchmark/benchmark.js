@@ -4,12 +4,12 @@ const numReads = 10000;
 const numWrites = 10000;
 const valueSize = 10000;
 
-function $(id) {
+function getEm(id) {
   return document.getElementById(id);
 }
 
 function writeOutput(text) {
-  $('output-area').textContent += text + '\n';
+  getEm('output-area').textContent += text + '\n';
 }
 
 /* Set up the kv pair db by writing a bunch of data. */
@@ -42,7 +42,7 @@ readMissingTest.description = 'reads ' + numReads + ' random keys that are not i
 
 async function benchmark(fn) {
   {
-    writeOutput('Setting up store, with ' + numWrites + ' kv pairs, each value about ' + valueSize + 'B');
+    writeOutput('Filling in store, with ' + numWrites + ' kv pairs, each value about ' + valueSize + 'B');
     let t0;
     await doWrites(() => t0 = performance.now());
     const t1 = performance.now();
@@ -57,11 +57,16 @@ async function benchmark(fn) {
   }
 }
 
-function runBenchmarks() {
-  $('output-area').textContent = '';
-  benchmark(readMissingTest);
+async function runBenchmarks() {
+  getEm('output-area').textContent = '';
+  getEm('run-button').disabled = true;
+  writeOutput('Generating random data...');
+  // The generation is slow and bogs down the UI thread so give the above UI updates a chance to cycle.
+  setTimeout(() => benchmark(readMissingTest).then((resolve, reject) => {
+    getEm('run-button').disabled = false;
+  }));
 }
 
-document.onload() = {
-  $('run-button').onclick = runBenchmarks;
+window.onload = function() {
+  getEm('run-button').onclick = runBenchmarks;
 }

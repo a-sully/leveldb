@@ -1,0 +1,44 @@
+html {
+  font-family: sans-serif;
+}
+
+#output-area {
+  width: 100%;
+  height: 800px;
+}
+
+#controls {
+  display: flex;
+  align-items: center;
+}
+
+#controls . {
+  display: inline-block;
+}
+
+#run-button {
+  background-color: #EE4B2B;
+  border: none;
+  border-radius: 60px;
+  width: 60;
+  height: 60;
+  color: white;
+  font-weight: bold;
+}
+
+#run-button:disabled {
+  border: 5px solid #EE4B2B;
+  border-bottom-color: transparent;
+  background-color: transparent;
+  box-sizing: border-box;
+  animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+  0% {
+      transform: rotate(0deg);
+  }
+  100% {
+      transform: rotate(360deg);
+  }
+}

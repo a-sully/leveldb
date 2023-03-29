@@ -3,5 +3,6 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "status.h"
+#include "iterator.h"
 #include "dbwrapper.h"
 #include "glue.cpp"

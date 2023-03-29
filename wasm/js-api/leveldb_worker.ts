@@ -1,6 +1,8 @@
 import Module from "./leveldbwasm.js"
 
-const databases = {}
+const databases = {};
+let iterator_next_id = 0;
+const iterators = {};
 let moduleInstance = undefined;
 
 const handlers = {
@@ -28,7 +30,60 @@ const handlers = {
       const ok = databases[db.dbName_].getLastStatus().ok();
       return {ok};
     },
+
+    newIterator(db) {
+      const iterator_id = iterator_next_id;
+      iterator_next_id++;
+
+      iterators[iterator_id] = databases[db.dbName_].newIterator();
+
+      return {result: iterator_id, ok: true};
+    }
   },
+  Iterator: {
+    valid({iterator_id_}) {
+      return {
+        result: iterators[iterator_id_].valid(),
+        ok: true,
+      }
+    },
+    seekToFirst({iterator_id_}) {
+      iterators[iterator_id_].seekToFirst();
+      return {
+        ok: true,
+      }
+    },
+    key({iterator_id_}) {
+      return {
+        result: iterators[iterator_id_].key(),
+        ok: true,
+      }
+    },
+    value({iterator_id_}) {
+      return {
+        result: iterators[iterator_id_].value(),
+        ok: true,
+      }
+    },
+    next({iterator_id_}) {
+      iterators[iterator_id_].next();
+      return {
+        ok: true,
+      }
+    },
+    prev({iterator_id_}) {
+      iterators[iterator_id_].prev();
+      return {
+        ok: true,
+      }
+    },
+    status({iterator_id_}) {
+      return {
+        result: iterators[iterator_id_].valid(),
+        ok: true,
+      }
+    },
+  }
 }
 
 onmessage = async (e) => {

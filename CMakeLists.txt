@@ -339,6 +339,8 @@ target_sources(leveldbwasm
     "wasm/idl/dbwrapper.h"
     "wasm/idl/status.cc"
     "wasm/idl/status.h"
+    "wasm/idl/iterator.cc"
+    "wasm/idl/iterator.h"
 )
 target_include_directories(leveldbwasm PRIVATE ${PROJECT_BINARY_DIR})
 target_link_options(leveldbwasm
@@ -353,10 +355,14 @@ target_link_libraries(leveldbwasm leveldb)
 
 # Copy typescript files into build directory (where glue.js also lives), then generate .js.
 set(JS_API_INPUT
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/js-api/leveldb_connection.ts"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/js-api/leveldb_iterator.ts"
   "${CMAKE_CURRENT_SOURCE_DIR}/wasm/js-api/leveldb_db.ts"
   "${CMAKE_CURRENT_SOURCE_DIR}/wasm/js-api/leveldb_worker.ts"
 )
 set(JS_API_OUTPUT
+  "leveldb_connection.js"
+  "leveldb_iterator.js"
   "leveldb_db.js"
   "leveldb_worker.js"
 )

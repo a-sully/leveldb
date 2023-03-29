@@ -6,6 +6,7 @@
 
 #include "include/leveldb/db.h"
 #include "include/leveldb/status.h"
+#include "iterator.h"
 
 DbWrapper::DbWrapper(const char* name) {
   leveldb::Options options;
@@ -16,23 +17,19 @@ DbWrapper::DbWrapper(const char* name) {
   status_ = status;
 }
 
-DbWrapper::~DbWrapper() {
-  delete db_;
-}
+DbWrapper::~DbWrapper() { delete db_; }
 
 void DbWrapper::put(const char* k, const char* v) {
   status_ = db_->Put({}, k, v);
 }
 
-void DbWrapper::remove(const char* k) {
-  status_ = db_->Delete({}, k);
-}
+void DbWrapper::remove(const char* k) { status_ = db_->Delete({}, k); }
 
 const char* DbWrapper::get(const char* k) {
   status_ = db_->Get({}, k, &value_);
   return value_.c_str();
 }
 
-const Status& DbWrapper::getLastStatus() {
-  return status_;
-}
+Iterator* DbWrapper::newIterator() { return new Iterator(db_->NewIterator({})); }
+
+const Status& DbWrapper::getLastStatus() { return status_; }

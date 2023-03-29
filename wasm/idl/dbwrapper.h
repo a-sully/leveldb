@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "iterator.h"
 #include "status.h"
 
 namespace leveldb {
@@ -22,6 +23,7 @@ class DbWrapper {
   void put(const char* k, const char* v);
   void remove(const char* k);
   const char* get(const char* k);
+  Iterator* newIterator();
 
  private:
   leveldb::DB* db_ = nullptr;

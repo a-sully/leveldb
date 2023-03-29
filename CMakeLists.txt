@@ -325,6 +325,7 @@ set(WEBIDL_BINDER_OUTPUT
 add_custom_command(
   OUTPUT ${WEBIDL_BINDER_OUTPUT}
   COMMAND ${CMAKE_SOURCE_DIR}/third_party/emsdk/upstream/emscripten/tools/webidl_binder ${WEBIDL_BINDER_INPUT} glue
+  DEPENDS ${WEBIDL_BINDER_INPUT}
 )
 add_custom_target(generate_webidl_glue DEPENDS ${WEBIDL_BINDER_OUTPUT})
 

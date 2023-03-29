@@ -368,14 +368,32 @@ add_custom_command(
   DEPENDS ${WEBIDL_BINDER_OUTPUT}
   DEPENDS ${JS_API_INPUT}
   COMMAND cp ${JS_API_INPUT} ./
-  COMMAND npx tsc --module es6 --target es6 ${JS_API_INPUT_STRIPPED}
+  COMMAND npx tsc --module es2022 --target es2022 ${JS_API_INPUT_STRIPPED}
 )
-add_custom_target(generate_js_from_ts DEPENDS ${JS_API_OUTPUT})
-add_dependencies(generate_js_from_ts leveldbwasm)
+add_custom_target(jsapi DEPENDS ${JS_API_OUTPUT})
+add_dependencies(jsapi leveldbwasm)
+
+set(DEMO_JS_INPUT
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/demo/main.ts"
+)
+set(DEMO_JS_OUTPUT
+  "main.js"
+)
+# Strip paths from filenames.
+set(DEMO_JS_INPUT_STRIPPED ${DEMO_JS_INPUT})
+list(TRANSFORM DEMO_JS_INPUT_STRIPPED REPLACE ".*/" "")
+add_custom_command(
+  OUTPUT ${DEMO_JS_OUTPUT}
+  DEPENDS ${DEMO_JS_INPUT}
+  DEPENDS ${JS_API_OUTPUT}
+  COMMAND cp ${DEMO_JS_INPUT} ./
+  COMMAND npx tsc --module es2022 --target es2022 ${DEMO_JS_INPUT_STRIPPED}
+)
+add_custom_target(leveldbwasmdemo_js DEPENDS ${DEMO_JS_OUTPUT})
+add_dependencies(leveldbwasmdemo_js jsapi)
 
 set(DEMO_INPUT
   "${CMAKE_CURRENT_SOURCE_DIR}/wasm/demo/demo.html"
-  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/demo/main.js"
 )
 set(DEMO_OUTPUT ${DEMO_INPUT})
 list(TRANSFORM DEMO_OUTPUT REPLACE ".*/" "")
@@ -386,7 +404,7 @@ add_custom_command(
   COMMAND cp ${DEMO_INPUT} ./
 )
 add_custom_target(leveldbwasmdemo DEPENDS ${DEMO_OUTPUT})
-add_dependencies(leveldbwasmdemo generate_js_from_ts)
+add_dependencies(leveldbwasmdemo leveldbwasmdemo_js)
 endif (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
 ###### END IDL glue ######
 

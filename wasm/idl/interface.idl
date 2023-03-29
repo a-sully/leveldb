@@ -18,5 +18,5 @@ interface DbWrapper {
 
   [Const] DOMString get(DOMString k);
 
-  Status getLastStatus();
+  [Ref, Const] Status getLastStatus();
 };

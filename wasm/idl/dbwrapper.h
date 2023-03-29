@@ -17,7 +17,7 @@ class DbWrapper {
   explicit DbWrapper(std::string name);
   ~DbWrapper();
 
-  Status* getLastStatus();
+  const Status& getLastStatus();
 
   void put(std::string k, std::string v);
   void remove(std::string k);

@@ -26,6 +26,6 @@ const char* DbWrapper::get(std::string k) {
   return value_.c_str();
 }
 
-Status* DbWrapper::getLastStatus() {
-  return &status_;
+const Status& DbWrapper::getLastStatus() {
+  return status_;
 }

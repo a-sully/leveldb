@@ -342,8 +342,13 @@ target_sources(leveldbwasm
 )
 target_include_directories(leveldbwasm PRIVATE ${PROJECT_BINARY_DIR})
 target_link_options(leveldbwasm
-  PUBLIC --post-js glue.js -sMODULARIZE -sEXPORT_ES6 -sEXPORTED_FUNCTIONS=_malloc -sALLOW_MEMORY_GROWTH -sPTHREAD_POOL_SIZE=100 -sWASMFS -sASSERTIONS -g -gsource-map
+  PUBLIC --post-js glue.js -sMODULARIZE -sEXPORT_ES6 -sEXPORTED_FUNCTIONS=_malloc -sALLOW_MEMORY_GROWTH -sPTHREAD_POOL_SIZE=100 -sWASMFS
 )
+if (CMAKE_SYSTEM_NAME STREQUAL "Debug")
+  target_link_options(leveldbwasm
+    PUBLIC -sASSERTIONS -g -gsource-map
+  )
+endif (CMAKE_SYSTEM_NAME STREQUAL "Debug")
 target_link_libraries(leveldbwasm leveldb)
 
 # Copy typescript files into build directory (where glue.js also lives), then generate .js.

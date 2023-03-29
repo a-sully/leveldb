@@ -422,6 +422,7 @@ add_custom_command(
 set(BENCHMARK_INPUT
   "${CMAKE_CURRENT_SOURCE_DIR}/wasm/benchmark/benchmark.html"
   "${CMAKE_CURRENT_SOURCE_DIR}/wasm/benchmark/benchmark.js"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/benchmark/benchmark.css"
 )
 set(BENCHMARK_OUTPUT ${BENCHMARK_INPUT})
 list(TRANSFORM BENCHMARK_OUTPUT REPLACE ".*/" "")
@@ -434,8 +435,7 @@ add_custom_command(
 add_custom_target(leveldbwasmbench
   DEPENDS ${IDBKV_OUTPUT}
   DEPENDS ${BENCHMARK_OUTPUT})
-add_dependencies(leveldbwasmbench generate_js_from_ts)
->>>>>>> aaeb13e (Add basic benchmark with one test that only works on idbkv)
+add_dependencies(leveldbwasmbench leveldbwasm)
 endif (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
 ###### END IDL glue ######
 

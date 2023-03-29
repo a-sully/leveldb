@@ -4,6 +4,14 @@ const numReads = 10000;
 const numWrites = 10000;
 const valueSize = 10000;
 
+function $(id) {
+  return document.getElementById(id);
+}
+
+function writeOutput(text) {
+  $('output-area').textContent += text + '\n';
+}
+
 /* Set up the kv pair db by writing a bunch of data. */
 async function doWrites(startTimer) {
   let pairs = [];
@@ -34,23 +42,26 @@ readMissingTest.description = 'reads ' + numReads + ' random keys that are not i
 
 async function benchmark(fn) {
   {
-    console.log('Setting up store, with ' + numWrites + ' kv pairs, each value about ' + valueSize + 'B');
+    writeOutput('Setting up store, with ' + numWrites + ' kv pairs, each value about ' + valueSize + 'B');
     let t0;
     await doWrites(() => t0 = performance.now());
     const t1 = performance.now();
-    console.log('   ... took ' + (t1 - t0) + 'ms');
+    writeOutput('   ... took ' + (t1 - t0) + 'ms');
   }
   {
-    console.log('Running [' + fn.name +'], which ' + fn.description + '...');
+    writeOutput('Running [' + fn.name +'], which ' + fn.description + '...');
     let t0;
     await fn(() => t0 = performance.now());
     const t1 = performance.now();
-    console.log('   ... took ' + (t1 - t0) + 'ms');
+    writeOutput('   ... took ' + (t1 - t0) + 'ms');
   }
 }
 
 function runBenchmarks() {
+  $('output-area').textContent = '';
   benchmark(readMissingTest);
 }
 
-runBenchmarks();
+document.onload() = {
+  $('run-button').onclick = runBenchmarks;
+}

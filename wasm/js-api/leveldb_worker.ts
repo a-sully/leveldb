@@ -53,6 +53,18 @@ const handlers = {
         ok: true,
       }
     },
+    seekToLast({iterator_id_}) {
+      iterators[iterator_id_].seekToLast();
+      return {
+        ok: true,
+      }
+    },
+    seek(iterator, target: String) {
+      iterators[iterator.iterator_id_].seek(target);
+      return {
+        ok: true,
+      }
+    },
     key({iterator_id_}) {
       return {
         result: iterators[iterator_id_].key(),

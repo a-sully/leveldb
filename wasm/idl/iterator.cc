@@ -18,6 +18,10 @@ bool Iterator::valid() { return iterator_->Valid(); }
 
 void Iterator::seekToFirst() { iterator_->SeekToFirst(); }
 
+void Iterator::seekToLast() { iterator_->SeekToLast(); }
+
+void Iterator::seek(const char* target) { iterator_->Seek(target); }
+
 // TODO: Return a Slice
 const char* Iterator::key() {
   leveldb::Slice slice = iterator_->key();

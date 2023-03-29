@@ -22,6 +22,8 @@ class Iterator {
   bool valid();
 
   void seekToFirst();
+  void seekToLast();
+  void seek(const char* target);
 
   const char* key();
   const char* value();

@@ -16,6 +16,14 @@ export class Iterator {
     return LevelDbConnection.getInstance().postMessage(this, 'seekToFirst');
   }
 
+  seekToLast(): Promise<void> {
+    return LevelDbConnection.getInstance().postMessage(this, 'seekToLast');
+  }
+
+  seek(target: String): Promise<void> {
+    return LevelDbConnection.getInstance().postMessage(this, 'seek', target)
+  }
+
   key(): Promise<string> {
     return LevelDbConnection.getInstance().postMessage(this, 'key');
   }

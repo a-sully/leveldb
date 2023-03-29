@@ -32,5 +32,29 @@
     <input id="put" type="button" value="Put"><br>
     <span style="font-style: italic;">Result: </span><span id="put_result"></span>
 </p>
+<p>
+    <span style="font-weight: bold;">Delete:</span><br>
+    <label for="delete_key">Key: </label><input id="delete_key" type="text"><br>
+    <input id="delete" type="button" value="Delete"><br>
+    <span style="font-style: italic;">Result: </span><span id="delete_result"></span>
+</p>
+<p>
+    <span style="font-weight: bold;">Iterator:</span>
+</p>
+<table id="table">
+    <tr><th>Key</th><th>Value</th></tr>
+</table>
+<template id="iterator_row">
+    <tr>
+        <td id="row_key"></td>
+        <td id="row_value"></td>
+        <td><button id="row_delete" type="button" value="Delete"></button></td>
+    </tr>
+</template>
+<p>
+    <input id="iterator_prev" type="button" value="Previous">
+    <input id="iterator_next" type="button" value="Next">
+    <span id="iterator_result"></span>
+</p>
 </body>
 </html>

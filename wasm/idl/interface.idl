@@ -12,6 +12,8 @@ interface Status {
 interface Iterator {
   boolean valid();
   void seekToFirst();
+  void seekToLast();
+  void seek(DOMString target);
   [Const] DOMString key();
   [Const] DOMString value();
   void next(); 

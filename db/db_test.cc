@@ -271,7 +271,7 @@ class DBTest : public testing::Test {
     dbname_ += "/db_test";
     DestroyDB(dbname_, Options());
     db_ = nullptr;
-    Reopen();
+    EXPECT_LEVELDB_OK(Reopen());
   }
 
   ~DBTest() {
@@ -288,8 +288,11 @@ class DBTest : public testing::Test {
     if (option_config_ >= kEnd) {
       return false;
     } else {
-      DestroyAndReopen();
-      return true;
+      auto status = DestroyAndReopen();
+      EXPECT_LEVELDB_OK(status);
+      // TODO(asully): Always return true here. There are more configs to test,
+      // but currently this makes things go haywire if we try to continue.
+      return status.ok();
     }
   }
 
@@ -315,8 +318,8 @@ class DBTest : public testing::Test {
 
   DBImpl* dbfull() { return reinterpret_cast<DBImpl*>(db_); }
 
-  void Reopen(Options* options = nullptr) {
-    ASSERT_LEVELDB_OK(TryReopen(options));
+  Status Reopen(Options* options = nullptr) {
+    return TryReopen(options);
   }
 
   void Close() {
@@ -324,11 +327,11 @@ class DBTest : public testing::Test {
     db_ = nullptr;
   }
 
-  void DestroyAndReopen(Options* options = nullptr) {
+  Status DestroyAndReopen(Options* options = nullptr) {
     delete db_;
     db_ = nullptr;
     DestroyDB(dbname_, Options());
-    ASSERT_LEVELDB_OK(TryReopen(options));
+    return TryReopen(options);
   }
 
   Status TryReopen(Options* options) {
@@ -623,7 +626,7 @@ TEST_F(DBTest, GetFromImmutableLayer) {
     Options options = CurrentOptions();
     options.env = env_;
     options.write_buffer_size = 100000;  // Small write buffer
-    Reopen(&options);
+    ASSERT_LEVELDB_OK(Reopen(&options));
 
     ASSERT_LEVELDB_OK(Put("foo", "v1"));
     ASSERT_EQ("v1", Get("foo"));
@@ -1020,7 +1023,7 @@ TEST_F(DBTest, Recover) {
     ASSERT_LEVELDB_OK(Put("foo", "v1"));
     ASSERT_LEVELDB_OK(Put("baz", "v5"));
 
-    Reopen();
+    ASSERT_LEVELDB_OK(Reopen());
     ASSERT_EQ("v1", Get("foo"));
 
     ASSERT_EQ("v1", Get("foo"));
@@ -1028,7 +1031,7 @@ TEST_F(DBTest, Recover) {
     ASSERT_LEVELDB_OK(Put("bar", "v2"));
     ASSERT_LEVELDB_OK(Put("foo", "v3"));
 
-    Reopen();
+    ASSERT_LEVELDB_OK(Reopen());
     ASSERT_EQ("v3", Get("foo"));
     ASSERT_LEVELDB_OK(Put("foo", "v4"));
     ASSERT_EQ("v4", Get("foo"));
@@ -1041,10 +1044,10 @@ TEST_F(DBTest, RecoveryWithEmptyLog) {
   do {
     ASSERT_LEVELDB_OK(Put("foo", "v1"));
     ASSERT_LEVELDB_OK(Put("foo", "v2"));
-    Reopen();
-    Reopen();
+    ASSERT_LEVELDB_OK(Reopen());
+    ASSERT_LEVELDB_OK(Reopen());
     ASSERT_LEVELDB_OK(Put("foo", "v3"));
-    Reopen();
+    ASSERT_LEVELDB_OK(Reopen());
     ASSERT_EQ("v3", Get("foo"));
   } while (ChangeOptions());
 }
@@ -1056,7 +1059,7 @@ TEST_F(DBTest, RecoverDuringMemtableCompaction) {
     Options options = CurrentOptions();
     options.env = env_;
     options.write_buffer_size = 1000000;
-    Reopen(&options);
+    ASSERT_LEVELDB_OK(Reopen(&options));
 
     // Trigger a long memtable compaction and reopen the database during it
     ASSERT_LEVELDB_OK(Put("foo", "v1"));  // Goes to 1st log file
@@ -1066,7 +1069,7 @@ TEST_F(DBTest, RecoverDuringMemtableCompaction) {
         Put("big2", std::string(1000, 'y')));  // Triggers compaction
     ASSERT_LEVELDB_OK(Put("bar", "v2"));       // Goes to new log file
 
-    Reopen(&options);
+    ASSERT_LEVELDB_OK(Reopen(&options));
     ASSERT_EQ("v1", Get("foo"));
     ASSERT_EQ("v2", Get("bar"));
     ASSERT_EQ(std::string(10000000, 'x'), Get("big1"));
@@ -1083,7 +1086,7 @@ static std::string Key(int i) {
 TEST_F(DBTest, MinorCompactionsHappen) {
   Options options = CurrentOptions();
   options.write_buffer_size = 10000;
-  Reopen(&options);
+  ASSERT_LEVELDB_OK(Reopen(&options));
 
   const int N = 500;
 
@@ -1098,7 +1101,7 @@ TEST_F(DBTest, MinorCompactionsHappen) {
     ASSERT_EQ(Key(i) + std::string(1000, 'v'), Get(Key(i)));
   }
 
-  Reopen();
+  ASSERT_LEVELDB_OK(Reopen());
 
   for (int i = 0; i < N; i++) {
     ASSERT_EQ(Key(i) + std::string(1000, 'v'), Get(Key(i)));
@@ -1108,7 +1111,7 @@ TEST_F(DBTest, MinorCompactionsHappen) {
 TEST_F(DBTest, RecoverWithLargeLog) {
   {
     Options options = CurrentOptions();
-    Reopen(&options);
+    ASSERT_LEVELDB_OK(Reopen(&options));
     ASSERT_LEVELDB_OK(Put("big1", std::string(200000, '1')));
     ASSERT_LEVELDB_OK(Put("big2", std::string(200000, '2')));
     ASSERT_LEVELDB_OK(Put("small3", std::string(10, '3')));
@@ -1120,7 +1123,7 @@ TEST_F(DBTest, RecoverWithLargeLog) {
   // we flush table files in the middle of a large log file.
   Options options = CurrentOptions();
   options.write_buffer_size = 100000;
-  Reopen(&options);
+  ASSERT_LEVELDB_OK(Reopen(&options));
   ASSERT_EQ(NumTableFilesAtLevel(0), 3);
   ASSERT_EQ(std::string(200000, '1'), Get("big1"));
   ASSERT_EQ(std::string(200000, '2'), Get("big2"));
@@ -1132,7 +1135,7 @@ TEST_F(DBTest, RecoverWithLargeLog) {
 TEST_F(DBTest, CompactionsGenerateMultipleFiles) {
   Options options = CurrentOptions();
   options.write_buffer_size = 100000000;  // Large write buffer
-  Reopen(&options);
+  ASSERT_LEVELDB_OK(Reopen(&options));
 
   Random rnd(301);
 
@@ -1145,7 +1148,7 @@ TEST_F(DBTest, CompactionsGenerateMultipleFiles) {
   }
 
   // Reopening moves updates to level-0
-  Reopen(&options);
+  ASSERT_LEVELDB_OK(Reopen(&options));
   dbfull()->TEST_CompactRange(0, nullptr, nullptr);
 
   ASSERT_EQ(NumTableFilesAtLevel(0), 0);
@@ -1159,7 +1162,7 @@ TEST_F(DBTest, RepeatedWritesToSameKey) {
   Options options = CurrentOptions();
   options.env = env_;
   options.write_buffer_size = 100000;  // Small write buffer
-  Reopen(&options);
+  ASSERT_LEVELDB_OK(Reopen(&options));
 
   // We must have at most one file per level except for level-0,
   // which may have up to kL0_StopWritesTrigger files.
@@ -1177,7 +1180,7 @@ TEST_F(DBTest, RepeatedWritesToSameKey) {
 TEST_F(DBTest, SparseMerge) {
   Options options = CurrentOptions();
   options.compression = kNoCompression;
-  Reopen(&options);
+  ASSERT_LEVELDB_OK(Reopen(&options));
 
   FillLevels("A", "Z");
 
@@ -1229,10 +1232,10 @@ TEST_F(DBTest, ApproximateSizes) {
     Options options = CurrentOptions();
     options.write_buffer_size = 100000000;  // Large write buffer
     options.compression = kNoCompression;
-    DestroyAndReopen();
+    ASSERT_LEVELDB_OK(DestroyAndReopen());
 
     ASSERT_TRUE(Between(Size("", "xyz"), 0, 0));
-    Reopen(&options);
+    ASSERT_LEVELDB_OK(Reopen(&options));
     ASSERT_TRUE(Between(Size("", "xyz"), 0, 0));
 
     // Write 8MB (80 values, each 100K)
@@ -1251,14 +1254,14 @@ TEST_F(DBTest, ApproximateSizes) {
     if (options.reuse_logs) {
       // Recovery will reuse memtable, and GetApproximateSizes() does not
       // account for memtable usage;
-      Reopen(&options);
+      ASSERT_LEVELDB_OK(Reopen(&options));
       ASSERT_TRUE(Between(Size("", Key(50)), 0, 0));
       continue;
     }
 
     // Check sizes across recovery by reopening a few times
     for (int run = 0; run < 3; run++) {
-      Reopen(&options);
+      ASSERT_LEVELDB_OK(Reopen(&options));
 
       for (int compact_start = 0; compact_start < N; compact_start += 10) {
         for (int i = 0; i < N; i += 10) {
@@ -1287,7 +1290,7 @@ TEST_F(DBTest, ApproximateSizes_MixOfSmallAndLarge) {
   do {
     Options options = CurrentOptions();
     options.compression = kNoCompression;
-    Reopen();
+    ASSERT_LEVELDB_OK(Reopen());
 
     Random rnd(301);
     std::string big1 = RandomString(&rnd, 100000);
@@ -1307,7 +1310,7 @@ TEST_F(DBTest, ApproximateSizes_MixOfSmallAndLarge) {
 
     // Check sizes across recovery by reopening a few times
     for (int run = 0; run < 3; run++) {
-      Reopen(&options);
+      ASSERT_LEVELDB_OK(Reopen(&options));
 
       ASSERT_TRUE(Between(Size("", Key(0)), 0, 0));
       ASSERT_TRUE(Between(Size("", Key(1)), 10000, 11000));
@@ -1507,43 +1510,43 @@ TEST_F(DBTest, OverlapInLevel0) {
 }
 
 TEST_F(DBTest, L0_CompactionBug_Issue44_a) {
-  Reopen();
+  ASSERT_LEVELDB_OK(Reopen());
   ASSERT_LEVELDB_OK(Put("b", "v"));
-  Reopen();
+  ASSERT_LEVELDB_OK(Reopen());
   ASSERT_LEVELDB_OK(Delete("b"));
   ASSERT_LEVELDB_OK(Delete("a"));
-  Reopen();
+  ASSERT_LEVELDB_OK(Reopen());
   ASSERT_LEVELDB_OK(Delete("a"));
-  Reopen();
+  ASSERT_LEVELDB_OK(Reopen());
   ASSERT_LEVELDB_OK(Put("a", "v"));
-  Reopen();
-  Reopen();
+  ASSERT_LEVELDB_OK(Reopen());
+  ASSERT_LEVELDB_OK(Reopen());
   ASSERT_EQ("(a->v)", Contents());
   DelayMilliseconds(1000);  // Wait for compaction to finish
   ASSERT_EQ("(a->v)", Contents());
 }
 
 TEST_F(DBTest, L0_CompactionBug_Issue44_b) {
-  Reopen();
+  ASSERT_LEVELDB_OK(Reopen());
   Put("", "");
-  Reopen();
+  ASSERT_LEVELDB_OK(Reopen());
   Delete("e");
   Put("", "");
-  Reopen();
+  ASSERT_LEVELDB_OK(Reopen());
   Put("c", "cv");
-  Reopen();
+  ASSERT_LEVELDB_OK(Reopen());
   Put("", "");
-  Reopen();
+  ASSERT_LEVELDB_OK(Reopen());
   Put("", "");
   DelayMilliseconds(1000);  // Wait for compaction to finish
-  Reopen();
+  ASSERT_LEVELDB_OK(Reopen());
   Put("d", "dv");
-  Reopen();
+  ASSERT_LEVELDB_OK(Reopen());
   Put("", "");
-  Reopen();
+  ASSERT_LEVELDB_OK(Reopen());
   Delete("d");
   Delete("b");
-  Reopen();
+  ASSERT_LEVELDB_OK(Reopen());
   ASSERT_EQ("(->)(c->cv)", Contents());
   DelayMilliseconds(1000);  // Wait for compaction to finish
   ASSERT_EQ("(->)(c->cv)", Contents());
@@ -1614,7 +1617,7 @@ TEST_F(DBTest, CustomComparator) {
   new_options.comparator = &cmp;
   new_options.filter_policy = nullptr;   // Cannot use bloom filters
   new_options.write_buffer_size = 1000;  // Compact more often
-  DestroyAndReopen(&new_options);
+  ASSERT_LEVELDB_OK(DestroyAndReopen(&new_options));
   ASSERT_LEVELDB_OK(Put("[10]", "ten"));
   ASSERT_LEVELDB_OK(Put("[0x14]", "twenty"));
   for (int i = 0; i < 2; i++) {
@@ -1780,7 +1783,7 @@ TEST_F(DBTest, Locking) {
 TEST_F(DBTest, NoSpace) {
   Options options = CurrentOptions();
   options.env = env_;
-  Reopen(&options);
+  ASSERT_LEVELDB_OK(Reopen(&options));
 
   ASSERT_LEVELDB_OK(Put("foo", "v1"));
   ASSERT_EQ("v1", Get("foo"));
@@ -1801,7 +1804,7 @@ TEST_F(DBTest, NonWritableFileSystem) {
   Options options = CurrentOptions();
   options.write_buffer_size = 1000;
   options.env = env_;
-  Reopen(&options);
+  ASSERT_LEVELDB_OK(Reopen(&options));
   ASSERT_LEVELDB_OK(Put("foo", "v1"));
   // Force errors for new files.
   env_->non_writable_.store(true, std::memory_order_release);
@@ -1824,7 +1827,7 @@ TEST_F(DBTest, WriteSyncError) {
   // (a) Cause log sync calls to fail
   Options options = CurrentOptions();
   options.env = env_;
-  Reopen(&options);
+  ASSERT_LEVELDB_OK(Reopen(&options));
   env_->data_sync_error_.store(true, std::memory_order_release);
 
   // (b) Normal write should succeed
@@ -1867,7 +1870,7 @@ TEST_F(DBTest, ManifestWriteError) {
     options.env = env_;
     options.create_if_missing = true;
     options.error_if_exists = false;
-    DestroyAndReopen(&options);
+    ASSERT_LEVELDB_OK(DestroyAndReopen(&options));
     ASSERT_LEVELDB_OK(Put("foo", "bar"));
     ASSERT_EQ("bar", Get("foo"));
 
@@ -1884,7 +1887,7 @@ TEST_F(DBTest, ManifestWriteError) {
 
     // Recovery: should not lose data
     error_type->store(false, std::memory_order_release);
-    Reopen(&options);
+    ASSERT_LEVELDB_OK(Reopen(&options));
     ASSERT_EQ("bar", Get("foo"));
   }
 }
@@ -1939,7 +1942,7 @@ TEST_F(DBTest, BloomFilter) {
   options.env = env_;
   options.block_cache = NewLRUCache(0);  // Prevent cache hits
   options.filter_policy = NewBloomFilterPolicy(10);
-  Reopen(&options);
+  ASSERT_LEVELDB_OK(Reopen(&options));
 
   // Populate multiple layers
   const int N = 10000;
@@ -1990,7 +1993,7 @@ TEST_F(DBTest, LogCloseError) {
   Options options = CurrentOptions();
   options.env = env_;
   options.write_buffer_size = kWriteBufferSize;  // Small write buffer
-  Reopen(&options);
+  ASSERT_LEVELDB_OK(Reopen(&options));
   env_->log_file_close_.store(true, std::memory_order_release);
 
   std::string value(kValueSize, 'x');
@@ -2348,7 +2351,7 @@ TEST_F(DBTest, Randomized) {
         if (model_snap != nullptr) model.ReleaseSnapshot(model_snap);
         if (db_snap != nullptr) db_->ReleaseSnapshot(db_snap);
 
-        Reopen();
+        ASSERT_LEVELDB_OK(Reopen());
         ASSERT_TRUE(CompareIterators(step, &model, db_, nullptr, nullptr));
 
         model_snap = model.GetSnapshot();

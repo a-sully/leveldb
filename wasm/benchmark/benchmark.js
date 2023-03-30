@@ -5,6 +5,7 @@ const numReads = 10000;
 const numEntries = 10000;
 const valueSize = 10000;
 
+// Backend #1
 const indexedDb = {
   get: idbGet,
   set: idbSet,
@@ -12,33 +13,34 @@ const indexedDb = {
   clear: idbClear,
 }
 
-class LevelDbImpl = {
-  private static instance_;
-  private db_;
+// Backend #2
+class LevelDbImpl {
+  static instance_;
+  db_;
 
-  private constructor(dbName) {
-    db_ = new LevelDb(dbName);
+  constructor(dbName) {
+    this.db_ = new LevelDb(dbName);
   }
 
-  public getInstance() {
-    if (!instance_)
-      instance_ = new LevelDbImpl('benchmark-db');
-    return instance_;
+  static getInstance() {
+    if (!LevelDbImpl.instance_)
+      LevelDbImpl.instance_ = new LevelDbImpl('benchmark-db');
+    return LevelDbImpl.instance_;
   }
 
-  public get(key) {
-    return db_.get(key);
+  get(key) {
+    return this.db_.get(key);
   }
 
-  public set(key, val) {
-    return db_.set(key, val);
+  set(key, val) {
+    return this.db_.put(key, val);
   }
 
-  public setMany(pairs) {
-    return null; // db_.setMany(pairs);
+  setMany(pairs) {
+    return this.db_.putMany(pairs);
   }
 
-  public clear() {
+  clear() {
     return null;
     // notimpl
   }
@@ -56,8 +58,8 @@ function writeOutput(text) {
   getEm('output-area').textContent += text + '\n';
 }
 
-function generateKey(range) {
-  return Math.floor(Math.random() * range).toString(16).padStart(range / 16, '0');
+function generateKey() {
+  return Math.random().toString(16).slice(2);
 }
 
 /* Set up the kv pair db by writing a bunch of data. */
@@ -67,7 +69,7 @@ async function doWrites(startTimer) {
   savedKeys = [];
   for (let i = 0; i < numEntries; ++i) {
     let value = Array.from({length: valueSize / 8}, (i) => Math.floor(Math.random() * maxVal).toString(36));
-    let key = generateKey(numEntries * 16);
+    let key = generateKey();
     savedKeys.push(key);
     pairs.push(key, value);
   }
@@ -80,7 +82,7 @@ async function readMissingTest(startTimer) {
   let keys = [];
   let promises = [];
   for (let i = 0; i < numReads; ++i) {
-    keys.push(generateKey(numEntries));
+    keys.push(generateKey() + 'g');
   }
   // Generation of random keys is not an interesting thing to test, so don't start the timer until that's done.
   startTimer();
@@ -94,7 +96,7 @@ async function readHotTest(startTimer) {
   let keys = [];
   let promises = [];
   for (let i = 0; i < numReads; ++i) {
-    keys.push(savedKeys[Math.floor(Math.random() * (savedKeys.length / 100))];
+    keys.push(savedKeys[Math.floor(Math.random() * (savedKeys.length / 100))]);
   }
   // Generation of keys is not an interesting thing to test, so don't start the timer until that's done.
   startTimer();
@@ -102,7 +104,7 @@ async function readHotTest(startTimer) {
   keys.forEach((key) => promises.push(activeBackend.get(key)));
   return Promise.all(promises);
 }
-readMissingTest.description = 'reads 1% of the keys in the database ' + numReads + ' times';
+readHotTest.description = 'reads 1% of the keys in the database ' + numReads + ' times';
 
 async function fillStore() {
   writeOutput('Filling in store, with ' + numEntries + ' kv pairs, each value about ' + valueSize + 'B');
@@ -123,6 +125,7 @@ async function benchmark(fn) {
 async function runBenchmarks() {
   getEm('output-area').textContent = '';
   getEm('run-button').disabled = true;
+
   if (getEm('idbkv').checked)
     activeBackend = indexedDb;
   else
@@ -132,10 +135,13 @@ async function runBenchmarks() {
   writeOutput('Generating random data...');
 
   // The generation is slow and bogs down the UI thread so give the above UI updates a chance to cycle.
-  setTimeout(() => await fillStore());
-  await benchmark(readMissingTest);
-
-  getEm('run-button').disabled = false;
+  setTimeout(() => fillStore().then(async (resolve, reject) => {
+    if (getEm('readMissing').checked)
+      await benchmark(readMissingTest);
+    if (getEm('readHot').checked)
+      await benchmark(readHotTest);
+    getEm('run-button').disabled = false;
+  }));
 }
 
 window.onload = function() {

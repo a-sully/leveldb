@@ -441,7 +441,7 @@ add_custom_command(
 add_custom_target(leveldbwasmbench
   DEPENDS ${IDBKV_OUTPUT}
   DEPENDS ${BENCHMARK_OUTPUT})
-add_dependencies(leveldbwasmbench leveldbwasm)
+add_dependencies(leveldbwasmbench leveldbwasm jsapi)
 endif (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
 ###### END IDL glue ######
 

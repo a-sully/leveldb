@@ -28,6 +28,12 @@ interface DbWrapper {
 
   void put(DOMString k, DOMString v);
 
+  void batchStart();
+
+  void batchEnd();
+
+  void batchPut(DOMString k, DOMString v);
+
   void remove(DOMString k);
 
   [Const] DOMString get(DOMString k);

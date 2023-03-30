@@ -4,6 +4,8 @@
 
 #include "dbwrapper.h"
 
+#include <memory>
+
 #include "include/leveldb/db.h"
 #include "include/leveldb/status.h"
 #include "iterator.h"
@@ -30,6 +32,36 @@ const char* DbWrapper::get(const char* k) {
   return value_.c_str();
 }
 
-Iterator* DbWrapper::newIterator() { return new Iterator(db_->NewIterator({})); }
+Iterator* DbWrapper::newIterator() {
+  return new Iterator(db_->NewIterator({}));
+}
 
 const Status& DbWrapper::getLastStatus() { return status_; }
+
+void DbWrapper::batchStart() {
+  if (write_batch_) {
+    status_ = leveldb::Status::NotSupported(
+        "Called batchStart while in batch write.");
+    return;
+  }
+  write_batch_ =
+      std::unique_ptr<leveldb::WriteBatch>(new leveldb::WriteBatch());
+}
+void DbWrapper::batchEnd() {
+  if (!write_batch_) {
+    status_ = leveldb::Status::NotSupported(
+        "Called batchEnd while not in batch write.");
+    return;
+  }
+  db_->Write({}, write_batch_.get());
+  write_batch_.reset();
+}
+
+void DbWrapper::batchPut(const char* k, const char* v) {
+  if (!write_batch_) {
+    status_ = leveldb::Status::NotSupported(
+        "Called batchPut while not in batch write.");
+    return;
+  }
+  write_batch_->Put(k, v);
+}

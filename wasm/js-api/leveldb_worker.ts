@@ -29,12 +29,16 @@ const handlers = {
     },
 
     putMany(db, kvPairs: string[][]) {
+      const database = databases[db.dbName_];
+      database.batchStart();
       for (const [k, v] of kvPairs) {
-        const {errorString} = handlers.LevelDb.put(db, k, v);
+        database.batchPut(k, v);
+        const errorString = database.getLastStatus().toErrorString();
         if (errorString) {
           return {errorString};
         }
       }
+      database.batchEnd();
       return {errorString: null};
     },
 

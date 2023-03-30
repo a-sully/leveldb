@@ -4,8 +4,10 @@
 #ifndef DB_WRAPPER_H_
 #define DB_WRAPPER_H_
 
+#include <memory>
 #include <string>
 
+#include "include/leveldb/write_batch.h"
 #include "iterator.h"
 #include "status.h"
 
@@ -25,10 +27,15 @@ class DbWrapper {
   const char* get(const char* k);
   Iterator* newIterator();
 
+  void batchStart();
+  void batchEnd();
+  void batchPut(const char* k, const char* v);
+
  private:
   leveldb::DB* db_ = nullptr;
   std::string value_;
   Status status_;
+  std::unique_ptr<leveldb::WriteBatch> write_batch_;
 };
 
 #endif  // DB_WRAPPER_H_

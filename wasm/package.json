@@ -1,0 +1,15 @@
+{
+  "name": "leveldbwasm",
+  "version": "0.0.1",
+  "description": "WASM port of LevelDB",
+  "main": "leveldb_db.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "BSD-3-Clause",
+  "devDependencies": {
+    "@types/wicg-file-system-access": "^2020.9.5",
+    "typescript": "^5.0.2"
+  }
+}

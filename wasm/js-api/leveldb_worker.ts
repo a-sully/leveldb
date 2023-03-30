@@ -13,19 +13,29 @@ const handlers = {
       return {ok};
     },
 
-    put(db, k: String, v: String) {
+    put(db, k: string, v: string) {
       databases[db.dbName_].put(k, v);
       const ok = databases[db.dbName_].getLastStatus().ok();
       return {ok};
     },
 
-    get(db, k: String) {
+    putMany(db, kvPairs: string[][]) {
+      for (const [k, v] of kvPairs) {
+        const {ok} = handlers.LevelDb.put(db, k, v);
+        if (!ok) {
+          return {ok};
+        }
+      }
+      return {ok: true};
+    },
+
+    get(db, k: string) {
       const result = databases[db.dbName_].get(k);
       const ok = databases[db.dbName_].getLastStatus().ok();
       return {result, ok};
     },
 
-    remove(db, k: String) {
+    remove(db, k: string) {
       databases[db.dbName_].remove(k);
       const ok = databases[db.dbName_].getLastStatus().ok();
       return {ok};
@@ -38,7 +48,7 @@ const handlers = {
       iterators[iterator_id] = databases[db.dbName_].newIterator();
 
       return {result: iterator_id, ok: true};
-    }
+    },
   },
   Iterator: {
     valid({iterator_id_}) {

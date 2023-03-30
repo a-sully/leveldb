@@ -35,6 +35,11 @@ export class LevelDb {
     await LevelDbConnection.getInstance().postMessage(this, 'put', k, v);
   }
 
+  public async putMany(kvPairs: string[][]) {
+    await this.dbReady();
+    await LevelDbConnection.getInstance().postMessage(this, 'putMany', kvPairs);
+  }
+
   public async remove(k: string) {
     await this.dbReady();
     await LevelDbConnection.getInstance().postMessage(this, 'remove', k);

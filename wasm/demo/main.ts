@@ -78,6 +78,17 @@ async function copyFile(source: FileSystemFileHandle, dest: FileSystemFileHandle
   console.log("copyied: ", source.name);
 }
 
+const generateDataButton = document.getElementById('generate_data');
+generateDataButton.addEventListener('click', async () => {
+  const data = [];
+  for (let i = 0; i < 1000; ++i) {
+    const key = i.toString(10).padStart(4, '0');
+    const value = i.toString(16);
+    data.push([key, value]);
+  }
+  await db.putMany(data);
+});
+
 const getButton = document.getElementById('get');
 getButton.addEventListener('click', async () => {
   const keyInput = document.getElementById('get_key') as HTMLInputElement;
@@ -100,7 +111,7 @@ putButton.addEventListener('click', async () => {
   try {
     await db.put(keyInput.value, valueInput.value);
     resultSpan.textContent = 'Done';
-    refreshIteratorTable(await iteratorTop.valid() ? await iteratorTop.key() : undefined);
+    refreshIteratorTable(iteratorTop.valid ? iteratorTop.key : undefined);
   } catch (e) {
     resultSpan.textContent = `${e.name}: ${e.message}`;
     console.error(e);
@@ -115,7 +126,7 @@ deleteButton.addEventListener('click', async () => {
   try {
     await db.remove(keyInput.value);
     resultSpan.textContent = 'Done';
-    refreshIteratorTable(await iteratorTop.valid() ? await iteratorTop.key() : undefined);
+    refreshIteratorTable(iteratorTop.valid ? iteratorTop.key : undefined);
   } catch (e) {
     resultSpan.textContent = `${e.name}: ${e.message}`;
     console.error(e);
@@ -137,7 +148,7 @@ function tableFull() {
 
 async function iteratorPrev() {
   await iteratorTop.prev();
-  if (!await iteratorTop.valid()) {
+  if (!iteratorTop.valid) {
     iteratorTop = await db.newIterator();
     await iteratorTop.seekToFirst();
     iteratorPrevButton.disabled = true;
@@ -151,7 +162,7 @@ async function iteratorPrev() {
   }
 
   const row = iteratorTable.insertRow(1);
-  await populateRow(row, iteratorTop);
+  populateRow(row, iteratorTop);
   return true;
 }
 
@@ -166,7 +177,7 @@ iteratorPrevButton.addEventListener('click', async () => {
 
 async function iteratorNext() {
   await iteratorBottom.next();
-  if (!await iteratorBottom.valid()) {
+  if (!iteratorBottom.valid) {
     iteratorBottom = await db.newIterator();
     await iteratorBottom.seekToLast();
     iteratorNextButton.disabled = true;
@@ -180,7 +191,7 @@ async function iteratorNext() {
   }
 
   const row = iteratorTable.insertRow(-1);
-  await populateRow(row, iteratorBottom);
+  populateRow(row, iteratorBottom);
   return true;
 }
 
@@ -193,22 +204,22 @@ iteratorNextButton.addEventListener('click', async () => {
   }
 });
 
-async function populateRow(row, iterator) {
+function populateRow(row, iterator) {
   // Save the key from the iterator so it can be used by the delete button.
-  const key = await iterator.key();
+  const key = iterator.key;
   const keyEl = document.createElement('td');
   keyEl.textContent = key;
   row.appendChild(keyEl);
 
   const valueEl = document.createElement('td');
-  valueEl.textContent = await iterator.value();
+  valueEl.textContent = iterator.value;
   row.appendChild(valueEl);
 
   const deleteButton = document.createElement('input');
   deleteButton.type = 'button';
   deleteButton.value = 'Delete';
   deleteButton.addEventListener('click', async () => {
-    const topKey = await iteratorTop.key();
+    const topKey = iteratorTop.key;
     await db.remove(key);
     refreshIteratorTable(topKey);
   });
@@ -234,9 +245,9 @@ async function refreshIteratorTable(startingKey = undefined) {
     await iteratorBottom.seekToFirst();
   }
 
-  if (iteratorBottom.valid()) {
+  if (iteratorBottom.valid) {
     const row = iteratorTable.insertRow(-1);
-    await populateRow(row, iteratorBottom);
+    populateRow(row, iteratorBottom);
 
     for (let i = 0; i < kIteratorStep - 1; ++i) {
       await iteratorNext();

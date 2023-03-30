@@ -26,6 +26,8 @@
 <fieldset>
     <legend>Select benchmarks:</legend>
 
+    <input type="checkbox" id="readRandom" name="readRandom">
+    <label for="readRandom">read random values</label><br>
     <input type="checkbox" id="readMissing" name="readMissing">
     <label for="readMissing">read missing values</label><br>
     <input type="checkbox" id="readHot" name="readHot">
@@ -41,8 +43,8 @@
     <span>Number of bytes in a value:</span>
     <input type="text" id="valueSize" placeholder="10000">
 </fieldset>
-
 </div>
+<span>Tips: check console for errors. Clear browsing data if things get stuck.</span>
 
 <textarea id="output-area" readony></textarea>
 </body>

@@ -18,8 +18,8 @@ interface Iterator {
   void seek(DOMString target);
   [Const] DOMString key();
   [Const] DOMString value();
-  void next(); 
-  void prev(); 
+  void next();
+  void prev();
   [Ref, Const] Status status();
 };
 

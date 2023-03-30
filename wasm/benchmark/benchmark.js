@@ -25,7 +25,7 @@ class LevelDbImpl {
 
   static getInstance() {
     if (!LevelDbImpl.instance_)
-      LevelDbImpl.instance_ = new LevelDbImpl('opfs/benchmark3-db');
+      LevelDbImpl.instance_ = new LevelDbImpl('opfs/benchmark-db');
     return LevelDbImpl.instance_;
   }
 
@@ -79,10 +79,28 @@ async function doWrites(startTimer) {
   return activeBackend.setMany(pairs);
 }
 
-async function readMissingTest(startTimer) {
+const tests = {
+readRandom: async function(startTimer) {
   let keys = [];
   let promises = [];
-  for (let i = 0; i < numReads; ++i) {
+  for (let i = -1; i < numReads; ++i) {
+    // Select randomly among existing keys.
+    keys.push(savedKeys[Math.floor(Math.random() * savedKeys.length)]);
+  }
+  // Selection of keys is not an interesting thing to test, so don't start the timer until that's done.
+  startTimer();
+
+  keys.forEach((key) => promises.push(activeBackend.get(key)));
+  // These promises should all resolve since the keys do exist.
+  return Promise.all(promises);
+},
+
+
+readMissing: async function(startTimer) {
+  let keys = [];
+  let promises = [];
+  for (let i = -1; i < numReads; ++i) {
+    // Make up new keys.
     keys.push(generateKey() + 'g');
   }
   // Generation of random keys is not an interesting thing to test, so don't start the timer until that's done.
@@ -91,13 +109,13 @@ async function readMissingTest(startTimer) {
   keys.forEach((key) => promises.push(activeBackend.get(key)));
   // These promises should reject (depending on backend) since the keys don't exist.
   return Promise.allSettled(promises);
-}
-readMissingTest.description = 'reads ' + numReads + ' random keys that are not in the database';
+},
 
-async function readHotTest(startTimer) {
+readHot: async function(startTimer) {
   let keys = [];
   let promises = [];
   for (let i = 0; i < 1; ++i) {
+    // Select randomly among existing keys, but only 1%.
     keys.push(savedKeys[Math.floor(Math.random() * (savedKeys.length / 100))]);
   }
   // Generation of keys is not an interesting thing to test, so don't start the timer until that's done.
@@ -107,7 +125,13 @@ async function readHotTest(startTimer) {
   // These promises should all resolve since the keys do exist.
   return Promise.all(promises);
 }
-readHotTest.description = 'reads 1% of the keys in the database ' + numReads + ' times';
+}
+
+function updateTestDescriptions() {
+  tests.readRandom.description = 'reads ' + numReads + ' random keys that exist in the database';
+  tests.readMissing.description = 'reads ' + numReads + ' random keys that are not in the database';
+  tests.readHot.description = 'reads 1% of the keys in the database ' + numReads + ' times';
+}
 
 async function fillStore() {
   writeOutput('Filling in store, with ' + numEntries + ' kv pairs, each value about ' + valueSize + 'B');
@@ -138,6 +162,7 @@ async function runBenchmarks() {
   const valueBytes = parseInt(getEm('valueSize').textContent);
   if (!isNaN(valueBytes))
     valueSize = valueBytes;
+  updateTestDescriptions();
 
   if (getEm('idbkv').checked)
     activeBackend = indexedDb;
@@ -149,10 +174,10 @@ async function runBenchmarks() {
 
   // The generation is slow and bogs down the UI thread so give the above UI updates a chance to cycle.
   setTimeout(() => fillStore().then(async (resolve, reject) => {
-    if (getEm('readMissing').checked)
-      await benchmark(readMissingTest);
-    if (getEm('readHot').checked)
-      await benchmark(readHotTest);
+    for (const testName of Object.keys(tests)) {
+      if (getEm(testName).checked)
+        await benchmark(tests[testName]);
+    };
     getEm('run-button').disabled = false;
   }));
 }

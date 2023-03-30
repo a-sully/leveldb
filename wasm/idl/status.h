@@ -15,9 +15,11 @@ class Status {
   void operator=(const leveldb::Status& status);
 
   bool ok();
+  const char* toErrorString();
 
  private:
   leveldb::Status status_;
+  std::string status_string_;
 };
 
 #endif  // STATUS_H_

@@ -7,6 +7,8 @@
 interface Status {
   void Status();
   boolean ok();
+  // Returns null if ok() is true.
+  [Const] DOMString toErrorString();
 };
 
 interface Iterator {

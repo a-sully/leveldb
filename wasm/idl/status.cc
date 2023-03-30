@@ -11,3 +11,11 @@ void Status::operator=(const leveldb::Status& status) {
 bool Status::ok() {
   return status_.ok();
 }
+
+const char* Status::toErrorString() {
+  if (ok())
+    return nullptr;
+
+  status_string_ = status_.ToString();
+  return status_string_.c_str();
+}

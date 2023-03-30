@@ -18,36 +18,36 @@ const handlers = {
   LevelDb: {
     open(db) {
       databases[db.dbName_] = new moduleInstance.DbWrapper(db.dbName_);
-      const ok = databases[db.dbName_].getLastStatus().ok();
-      return {ok};
+      let status = databases[db.dbName_].getLastStatus();
+      return {errorString: status.toErrorString()};
     },
 
     put(db, k: string, v: string) {
       databases[db.dbName_].put(k, v);
-      const ok = databases[db.dbName_].getLastStatus().ok();
-      return {ok};
+      let status = databases[db.dbName_].getLastStatus();
+      return {errorString: status.toErrorString()};
     },
 
     putMany(db, kvPairs: string[][]) {
       for (const [k, v] of kvPairs) {
-        const {ok} = handlers.LevelDb.put(db, k, v);
-        if (!ok) {
-          return {ok};
+        const {errorString} = handlers.LevelDb.put(db, k, v);
+        if (errorString) {
+          return {errorString};
         }
       }
-      return {ok: true};
+      return {errorString: null};
     },
 
     get(db, k: string) {
       const result = databases[db.dbName_].get(k);
-      const ok = databases[db.dbName_].getLastStatus().ok();
-      return {result, ok};
+      let status = databases[db.dbName_].getLastStatus();
+      return {result, errorString: status.toErrorString()};
     },
 
     remove(db, k: string) {
       databases[db.dbName_].remove(k);
-      const ok = databases[db.dbName_].getLastStatus().ok();
-      return {ok};
+      let status = databases[db.dbName_].getLastStatus();
+      return {errorString: status.toErrorString()};
     },
 
     newIterator(db) {
@@ -56,7 +56,7 @@ const handlers = {
 
       iterators[iterator_id] = databases[db.dbName_].newIterator();
 
-      return {result: iterator_id, ok: true};
+      return {result: iterator_id, errorString: null};
     },
   },
   Iterator: {
@@ -65,7 +65,7 @@ const handlers = {
       iterator.seekToFirst();
       return {
         result: iteratorResult(iterator),
-        ok: true,
+        errorString: null,
       }
     },
     seekToLast({iterator_id_}) {
@@ -73,7 +73,7 @@ const handlers = {
       iterator.seekToLast();
       return {
         result: iteratorResult(iterator),
-        ok: true,
+        errorString: null,
       }
     },
     seek({iterator_id_}, target: String) {
@@ -81,7 +81,7 @@ const handlers = {
       iterator.seek(target);
       return {
         result: iteratorResult(iterator),
-        ok: true,
+        errorString: null,
       }
     },
     next({iterator_id_}) {
@@ -89,7 +89,7 @@ const handlers = {
       iterator.next();
       return {
         result: iteratorResult(iterator),
-        ok: true,
+        errorString: null,
       }
     },
     prev({iterator_id_}) {
@@ -97,7 +97,7 @@ const handlers = {
       iterator.prev();
       return {
         result: iteratorResult(iterator),
-        ok: true,
+        errorString: null,
       }
     },
   }
@@ -114,6 +114,6 @@ onmessage = async (e) => {
 
   const [messageId, targetObj, messageName, ...args] = e.data;
 
-  const {result, ok} = handlers[targetObj.CLASS_NAME][messageName](targetObj, ...args);
-  postMessage([messageId, ok, result]);
+  const {result, errorString} = handlers[targetObj.CLASS_NAME][messageName](targetObj, ...args);
+  postMessage([messageId, errorString, result]);
 };

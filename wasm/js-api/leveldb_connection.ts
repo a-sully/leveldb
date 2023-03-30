@@ -16,11 +16,11 @@ export class LevelDbConnection {
     this.worker_ = new Worker('leveldb_worker.js', {type: 'module'});
     this.worker_.onerror = (event) => {console.log('Worker error ', event);};
     this.worker_.onmessage = (event) => {
-      let [messageId, success, result] = event.data;
-      if (success)
-        this.promises_[messageId].resolve(result);
+      let [messageId, errorString, result] = event.data;
+      if (errorString)
+        this.promises_[messageId].reject('Status not ok: ' + errorString);
       else
-        this.promises_[messageId].reject('Status not ok');
+        this.promises_[messageId].resolve(result);
       delete this.promises_[messageId];
     };
   }

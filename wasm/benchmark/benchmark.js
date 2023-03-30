@@ -1,9 +1,10 @@
 import { get as idbGet, set as idbSet, setMany as idbSetMany, clear as idbClear} from './idbkv/index.js';
 import { LevelDb } from './leveldb_db.js';
 
-const numReads = 10000;
-const numEntries = 10000;
-const valueSize = 10000;
+// Default values for benchmark parameters.
+let numReads = 10000;
+let numEntries = 10000;
+let valueSize = 10000;
 
 // Backend #1
 const indexedDb = {
@@ -24,7 +25,7 @@ class LevelDbImpl {
 
   static getInstance() {
     if (!LevelDbImpl.instance_)
-      LevelDbImpl.instance_ = new LevelDbImpl('benchmark-db');
+      LevelDbImpl.instance_ = new LevelDbImpl('opfs/benchmark2-db');
     return LevelDbImpl.instance_;
   }
 
@@ -68,10 +69,10 @@ async function doWrites(startTimer) {
   const maxVal = Math.pow(36, 8);
   savedKeys = [];
   for (let i = 0; i < numEntries; ++i) {
-    let value = Array.from({length: valueSize / 8}, (i) => Math.floor(Math.random() * maxVal).toString(36));
+    let value = Array.from({length: valueSize / 8}, (i) => Math.floor(Math.random() * maxVal).toString(36)).join('');
     let key = generateKey();
     savedKeys.push(key);
-    pairs.push(key, value);
+    pairs.push([key, value]);
   }
   // Generation of random keys and values is not an interesting thing to test, so don't start the timer until that's done.
   startTimer();
@@ -88,20 +89,22 @@ async function readMissingTest(startTimer) {
   startTimer();
 
   keys.forEach((key) => promises.push(activeBackend.get(key)));
-  return Promise.all(promises);
+  // These promises should reject (depending on backend) since the keys don't exist.
+  return Promise.allSettled(promises);
 }
 readMissingTest.description = 'reads ' + numReads + ' random keys that are not in the database';
 
 async function readHotTest(startTimer) {
   let keys = [];
   let promises = [];
-  for (let i = 0; i < numReads; ++i) {
+  for (let i = 0; i < 1; ++i) {
     keys.push(savedKeys[Math.floor(Math.random() * (savedKeys.length / 100))]);
   }
   // Generation of keys is not an interesting thing to test, so don't start the timer until that's done.
   startTimer();
 
   keys.forEach((key) => promises.push(activeBackend.get(key)));
+  // These promises should all resolve since the keys do exist.
   return Promise.all(promises);
 }
 readHotTest.description = 'reads 1% of the keys in the database ' + numReads + ' times';
@@ -125,6 +128,16 @@ async function benchmark(fn) {
 async function runBenchmarks() {
   getEm('output-area').textContent = '';
   getEm('run-button').disabled = true;
+
+  const reads = parseInt(getEm('numReads').textContent);
+  if (!isNaN(reads))
+    numReads = reads;
+  const entries = parseInt(getEm('numEntries').textContent);
+  if (!isNaN(entries))
+    numEntries = entries;
+  const valueBytes = parseInt(getEm('valueSize').textContent);
+  if (!isNaN(valueBytes))
+    valueSize = valueBytes;
 
   if (getEm('idbkv').checked)
     activeBackend = indexedDb;

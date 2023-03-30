@@ -23,12 +23,25 @@
       <a href="https://github.com/a-sully/leveldb">Learn more</a>
     </div>
 </fieldset>
-<div>
-<input type="checkbox" id="readMissing" name="readMissing">
-<label for="readMissing">read missing values</label><br>
-<input type="checkbox" id="readHot" name="readHot">
-<label for="readHot">read hot (the same values a lot)</label><br>
-</div>
+<fieldset>
+    <legend>Select benchmarks:</legend>
+
+    <input type="checkbox" id="readMissing" name="readMissing">
+    <label for="readMissing">read missing values</label><br>
+    <input type="checkbox" id="readHot" name="readHot">
+    <label for="readHot">read hot (the same values a lot)</label><br>
+</fieldset>
+<fieldset>
+    <legend>Parameters:</legend>
+
+    <span>Number of reads to execute:</span>
+    <input type="text" id="numReads" placeholder="10000"><br>
+    <span>Number of entries in store:</span>
+    <input type="text" id="numEntries" placeholder="10000"><br>
+    <span>Number of bytes in a value:</span>
+    <input type="text" id="valueSize" placeholder="10000">
+</fieldset>
+
 </div>
 
 <textarea id="output-area" readony></textarea>

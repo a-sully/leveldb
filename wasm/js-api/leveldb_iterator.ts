@@ -13,9 +13,9 @@ export class Iterator {
     this.iterator_id_ = iterator_id;
   }
 
-  private async postMessage(message, ...args) {
+  private async postMessage(message: string, ...args: any[]) {
     ({valid: this.valid, key: this.key, value: this.value} =
-      await LevelDbConnection.getInstance().postMessage(this, message, ...args));
+      await LevelDbConnection.getInstance().postMessage(this.iterator_id_, 'Iterator', message, ...args));
   }
 
   seekToFirst(): Promise<void> {
@@ -49,6 +49,6 @@ export class Iterator {
     this.closed = true;
     this.key = undefined;
     this.value = undefined;
-    return LevelDbConnection.getInstance().postMessage(this, 'close');
+    return LevelDbConnection.getInstance().postMessage(this.iterator_id_, 'Iterator', 'close');
   }
 }

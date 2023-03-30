@@ -315,17 +315,22 @@ target_link_options(leveldbutil PRIVATE ${PRIVATE_TARGET_LINK_OPTIONS})
 ###### START IDL glue ######
 if (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
 # Generate glue js and cpp via webidl_binder.
+set(WEBIDL_TS_DEFINITIONS
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/idl/leveldbwasm.d.ts"
+)
 set(WEBIDL_BINDER_INPUT
   "${CMAKE_CURRENT_SOURCE_DIR}/wasm/idl/interface.idl"
 )
 set(WEBIDL_BINDER_OUTPUT
   "glue.cpp"
   "glue.js"
+  "leveldbwasm.d.ts"
 )
 add_custom_command(
   OUTPUT ${WEBIDL_BINDER_OUTPUT}
   COMMAND ${CMAKE_SOURCE_DIR}/third_party/emsdk/upstream/emscripten/tools/webidl_binder ${WEBIDL_BINDER_INPUT} glue
-  DEPENDS ${WEBIDL_BINDER_INPUT}
+  COMMAND cp ${WEBIDL_TS_DEFINITIONS} ./
+  DEPENDS ${WEBIDL_BINDER_INPUT} ${WEBIDL_TS_DEFINITIONS}
 )
 add_custom_target(generate_webidl_glue DEPENDS ${WEBIDL_BINDER_OUTPUT})
 
@@ -386,7 +391,7 @@ add_custom_command(
   DEPENDS ${WEBIDL_BINDER_OUTPUT}
   DEPENDS ${JS_API_INPUT}
   COMMAND cp ${JS_API_INPUT} ./
-  COMMAND npx tsc --module es2022 --target es2022 ${JS_API_INPUT_STRIPPED}
+  COMMAND npx tsc --module es2022 --target es2022 --noImplicitAny ${JS_API_INPUT_STRIPPED}
 )
 add_custom_target(jsapi DEPENDS ${JS_API_OUTPUT})
 add_dependencies(jsapi leveldbwasm)
@@ -406,7 +411,7 @@ add_custom_command(
   DEPENDS ${DEMO_JS_INPUT}
   DEPENDS ${JS_API_OUTPUT}
   COMMAND cp ${DEMO_JS_INPUT} ./
-  COMMAND npx tsc --module es2022 --target es2022 ${DEMO_JS_INPUT_STRIPPED}
+  COMMAND npx tsc --module es2022 --target es2022 --noImplicitAny ${DEMO_JS_INPUT_STRIPPED}
 )
 add_custom_target(leveldbwasmdemo_js DEPENDS ${DEMO_JS_OUTPUT})
 add_dependencies(leveldbwasmdemo_js jsapi)

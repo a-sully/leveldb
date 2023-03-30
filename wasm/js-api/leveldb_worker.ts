@@ -1,11 +1,17 @@
-import Module from "./leveldbwasm.js"
+import moduleInstanceConstructor from "./leveldbwasm.js";
+import { Module, Iterator, DbWrapper } from "./leveldbwasm";
 
-const databases = {};
+type WorkerResponse = {
+  result?: any,
+  errorString: string | null;
+}
+
+const databases = new Map<string, DbWrapper>();
 let iterator_next_id = 0;
-const iterators = {};
-let moduleInstance = undefined;
+const iterators = new Map<number, Iterator>();
+let moduleInstance: Module = undefined;
 
-function iteratorResult(iterator) {
+function iteratorResult(iterator: Iterator) {
   const valid = iterator.valid();
   return {
     valid,
@@ -14,32 +20,36 @@ function iteratorResult(iterator) {
   }
 }
 
-const handlers = {
+const handlers: { [key: string]: { [key: string]: (...args: any[]) => WorkerResponse } } = {
   LevelDb: {
-    open(db) {
-      if (databases[db.dbName_] == undefined) {
-        databases[db.dbName_] = new moduleInstance.DbWrapper(db.dbName_);
+    open(dbName: string): WorkerResponse {
+      let database = databases.get(dbName);
+      if (!database) {
+        database = new moduleInstance.DbWrapper(dbName);
+        databases.set(dbName, database);
       }
-      let status = databases[db.dbName_].getLastStatus();
+      let status = database.getLastStatus();
       return {errorString: status.toErrorString()};
     },
 
-    close(db) {
-      if (databases[db.dbName_] != undefined) {
-        databases[db.dbName_].close();
-        databases[db.dbName_] = undefined;
+    close(dbName: string): WorkerResponse {
+      const database = databases.get(dbName);
+      if (database) {
+        database.close();
+        databases.delete(dbName);
       }
-      return { ok: true }
+      return { errorString: null }
     },
 
-    put(db, k: string, v: string) {
-      databases[db.dbName_].put(k, v);
-      let status = databases[db.dbName_].getLastStatus();
+    put(dbName: string, k: string, v: string): WorkerResponse {
+      const database = databases.get(dbName);
+      database.put(k, v);
+      let status = database.getLastStatus();
       return {errorString: status.toErrorString()};
     },
 
-    putMany(db, kvPairs: string[][]) {
-      const database = databases[db.dbName_];
+    putMany(dbName: string, kvPairs: string[][]): WorkerResponse {
+      const database = databases.get(dbName);
       database.batchStart();
       for (const [k, v] of kvPairs) {
         database.batchPut(k, v);
@@ -52,77 +62,80 @@ const handlers = {
       return {errorString: null};
     },
 
-    get(db, k: string) {
-      const result = databases[db.dbName_].get(k);
-      let status = databases[db.dbName_].getLastStatus();
+    get(dbName: string, k: string): WorkerResponse {
+      const database = databases.get(dbName);
+      const result = database.get(k);
+      let status = database.getLastStatus();
       return {result, errorString: status.toErrorString()};
     },
 
-    remove(db, k: string) {
-      databases[db.dbName_].remove(k);
-      let status = databases[db.dbName_].getLastStatus();
+    remove(dbName: string, k: string): WorkerResponse {
+      const database = databases.get(dbName);
+      database.remove(k);
+      let status = database.getLastStatus();
       return {errorString: status.toErrorString()};
     },
 
-    newIterator(db) {
+    newIterator(dbName: string): WorkerResponse {
       const iterator_id = iterator_next_id;
       iterator_next_id++;
 
-      iterators[iterator_id] = databases[db.dbName_].newIterator();
+      const database = databases.get(dbName);
+      iterators.set(iterator_id, database.newIterator());
 
       return {result: iterator_id, errorString: null};
     },
   },
   Iterator: {
-    seekToFirst({iterator_id_}) {
-      const iterator = iterators[iterator_id_];
+    seekToFirst(iteratorId: number): WorkerResponse {
+      const iterator = iterators.get(iteratorId);
       iterator.seekToFirst();
       return {
         result: iteratorResult(iterator),
         errorString: null,
       }
     },
-    seekToLast({iterator_id_}) {
-      const iterator = iterators[iterator_id_];
+    seekToLast(iteratorId: number): WorkerResponse {
+      const iterator = iterators.get(iteratorId);
       iterator.seekToLast();
       return {
         result: iteratorResult(iterator),
         errorString: null,
       }
     },
-    seek({iterator_id_}, target: String) {
-      const iterator = iterators[iterator_id_];
+    seek(iteratorId: number, target: string): WorkerResponse {
+      const iterator = iterators.get(iteratorId);
       iterator.seek(target);
       return {
         result: iteratorResult(iterator),
         errorString: null,
       }
     },
-    next({iterator_id_}) {
-      const iterator = iterators[iterator_id_];
+    next(iteratorId: number): WorkerResponse {
+      const iterator = iterators.get(iteratorId);
       iterator.next();
       return {
         result: iteratorResult(iterator),
         errorString: null,
       }
     },
-    prev({iterator_id_}) {
-      const iterator = iterators[iterator_id_];
+    prev(iteratorId: number): WorkerResponse {
+      const iterator = iterators.get(iteratorId);
       iterator.prev();
       return {
         result: iteratorResult(iterator),
         errorString: null,
       }
     },
-    close({iterator_id_}) {
-      const iterator = iterators[iterator_id_];
+    close(iteratorId: number): WorkerResponse {
+      const iterator = iterators.get(iteratorId);
 
       if (iterator != undefined) {
         iterator.close();
       }
-      iterators[iterator_id_] = undefined;
+      iterators.delete(iteratorId);
       return {
-        ok: true,
+        errorString: null,
       }
     },
   }
@@ -130,15 +143,16 @@ const handlers = {
 
 onmessage = async (e) => {
   if (!moduleInstance) {
-    moduleInstance = await Module();
+    moduleInstance = await moduleInstanceConstructor();
   }
 
   if (e.data.length < 3) {
     throw new Error("Message must contain messageId, targetObj, and messageName");
   }
 
-  const [messageId, targetObj, messageName, ...args] = e.data;
+  const [messageId, targetObj, className, messageName, ...args]: [number, string | number, string, string, ...any] = e.data;
 
-  const {result, errorString} = handlers[targetObj.CLASS_NAME][messageName](targetObj, ...args);
+  const handler: ((...args: any[]) => WorkerResponse) = handlers[className][messageName]
+  const {result, errorString} = handler(targetObj, ...args);
   postMessage([messageId, errorString, result]);
 };

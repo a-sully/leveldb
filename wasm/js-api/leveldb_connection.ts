@@ -1,8 +1,16 @@
+import { Iterator } from "./leveldb_iterator";
+import { LevelDb } from "./leveldb_db";
+
+type PendingPromise = {
+  resolve: Function;
+  reject: Function;
+} 
+
 /* Singleton */
 export class LevelDbConnection {
   private static instance: LevelDbConnection;
 
-  private promises_ = {};
+  private promises_ = new Map<number, PendingPromise>();
   private nextMessageId: number = 0;
 
   private worker_: Worker;
@@ -16,12 +24,13 @@ export class LevelDbConnection {
     this.worker_ = new Worker('leveldb_worker.js', {type: 'module'});
     this.worker_.onerror = (event) => {console.log('Worker error ', event);};
     this.worker_.onmessage = (event) => {
-      let [messageId, errorString, result] = event.data;
+      const [messageId, errorString, result] = event.data;
+      const {resolve, reject} = this.promises_.get(messageId);
+      this.promises_.delete(messageId);
       if (errorString)
-        this.promises_[messageId].reject('Status not ok: ' + errorString);
+        reject('Status not ok: ' + errorString);
       else
-        this.promises_[messageId].resolve(result);
-      delete this.promises_[messageId];
+        resolve(result);
     };
   }
 
@@ -47,11 +56,11 @@ export class LevelDbConnection {
     return this.worker_;
   }
 
-  public postMessage(targetObj, message: string, ...args): Promise<any> {
+  public postMessage(targetObj: string | number, klass: string, method: string, ...args: any[]): Promise<any> {
     const messageId = ++this.nextMessageId;
     let promise = new Promise((resolve, reject) => {
-      this.promises_[messageId] = {resolve, reject};
-      this.worker_.postMessage([messageId, targetObj, message, ...args]);
+      this.promises_.set(messageId, {resolve, reject});
+      this.worker_.postMessage([messageId, targetObj, klass, method, ...args]);
     });
     return promise;
   }

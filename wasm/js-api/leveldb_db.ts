@@ -2,14 +2,14 @@ import {Iterator} from './leveldb_iterator.js';
 import {LevelDbConnection} from './leveldb_connection.js';
 
 let db_create_promise_next_id = 0;
-const db_create_promises = {};
+const db_create_promises = new Map<number, Promise<void>>();
 
 export class LevelDb {
   private CLASS_NAME: string = this.constructor.name;
   private static nextId: number = 0;
   private id_: number;
   private dbName_: string;
-  private db_created_promise_id_;
+  private db_created_promise_id_: number;
   private isClosed_ = true;
   private iterators_: Iterator[] = [];
 
@@ -32,17 +32,21 @@ export class LevelDb {
     await this.dbReady();
   }
 
+  postMessage(method: string, ...args: any[]) {
+    return LevelDbConnection.getInstance().postMessage(this.dbName_, 'LevelDb', method, ...args);
+  }
+
   private startOpeningDb() {
     this.isClosed_ = false;
     this.db_created_promise_id_ = db_create_promise_next_id;
     db_create_promise_next_id++;
-    db_create_promises[db_create_promise_next_id] = LevelDbConnection.getInstance().postMessage(this, 'open');
+    db_create_promises.set(db_create_promise_next_id, this.postMessage('open'));
   }
 
   private async dbReady() {
-    if (db_create_promises.hasOwnProperty(this.db_created_promise_id_)) {
-      await db_create_promises[this.db_created_promise_id_];
-      delete db_create_promises[this.db_created_promise_id_];
+    if (db_create_promises.has(this.db_created_promise_id_)) {
+      await db_create_promises.get(this.db_created_promise_id_);
+      db_create_promises.delete(this.db_created_promise_id_);
     }
   }
 
@@ -51,28 +55,28 @@ export class LevelDb {
   }
 
   public async put(k: string, v: string) {
-    await this.dbOpenAndReady();
-    await LevelDbConnection.getInstance().postMessage(this, 'put', k, v);
+    await this.dbReady();
+    await this.postMessage('put', k, v);
   }
 
   public async putMany(kvPairs: string[][]) {
-    await this.dbOpenAndReady();
-    await LevelDbConnection.getInstance().postMessage(this, 'putMany', kvPairs);
+    await this.dbReady();
+    await this.postMessage('putMany', kvPairs);
   }
 
   public async remove(k: string) {
-    await this.dbOpenAndReady();
-    await LevelDbConnection.getInstance().postMessage(this, 'remove', k);
+    await this.dbReady();
+    await this.postMessage('remove', k);
   }
 
   public async get(k: string) {
-    await this.dbOpenAndReady();
-    return await LevelDbConnection.getInstance().postMessage(this, 'get', k);
+    await this.dbReady();
+    return await this.postMessage('get', k);
   }
 
   public async newIterator() {
     await this.dbOpenAndReady();
-    let iterator = new Iterator(await LevelDbConnection.getInstance().postMessage(this, 'newIterator'));
+    let iterator = new Iterator(await this.postMessage('newIterator'));
     this.iterators_.push(iterator);
     return iterator;
   }
@@ -91,6 +95,6 @@ export class LevelDb {
 
     this.iterators_ = [];
 
-    await LevelDbConnection.getInstance().postMessage(this, 'close');
+    await this.postMessage('close');
   }
 }

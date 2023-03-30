@@ -1,10 +1,10 @@
 import { LevelDb } from './leveldb_db.js';
-import {Iterator} from './leveldb_iterator.js';
+import { Iterator } from './leveldb_iterator.js';
 
 const dbName = 'db';
 let db: LevelDb = new LevelDb('/opfs/' + dbName);
 
-let selectedHandle: FileSystemDirectoryHandle;
+let selectedHandle: FileSystemDirectoryHandle | undefined;
 
 const openButton = document.getElementById("open_button");
 openButton.addEventListener("click", async () => {
@@ -144,8 +144,8 @@ const iteratorTable = document.getElementById('table') as HTMLTableElement;
 const iteratorPrevButton = document.getElementById('iterator_prev') as HTMLInputElement;
 const iteratorNextButton = document.getElementById('iterator_next') as HTMLInputElement;
 
-let iteratorTop: Iterator | undefined = undefined;
-let iteratorBottom: Iterator | undefined = undefined;
+let iteratorTop: Iterator | undefined;
+let iteratorBottom: Iterator | undefined;
 
 const kIteratorStep = 10;
 
@@ -211,7 +211,7 @@ iteratorNextButton.addEventListener('click', async () => {
   }
 });
 
-function populateRow(row, iterator) {
+function populateRow(row: HTMLTableRowElement, iterator: Iterator) {
   // Save the key from the iterator so it can be used by the delete button.
   const key = iterator.key;
   const keyEl = document.createElement('td');
@@ -233,7 +233,7 @@ function populateRow(row, iterator) {
   row.appendChild(deleteButton);
 }
 
-async function refreshIteratorTable(startingKey = undefined) {
+async function refreshIteratorTable(startingKey: string | undefined = undefined) {
   while (iteratorTable.rows.length > 1) {
     iteratorTable.deleteRow(1);
   }

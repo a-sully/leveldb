@@ -4,6 +4,8 @@
 
 // It seems WebIDL Binder recommends a single `.idl`, output file, etc.
 
+// When editing this file it must be kept in sync with leveldbwasm.d.ts.
+
 interface Status {
   void Status();
   boolean ok();

@@ -25,7 +25,7 @@ class LevelDbImpl {
 
   static getInstance() {
     if (!LevelDbImpl.instance_)
-      LevelDbImpl.instance_ = new LevelDbImpl('opfs/benchmark2-db');
+      LevelDbImpl.instance_ = new LevelDbImpl('opfs/benchmark3-db');
     return LevelDbImpl.instance_;
   }
 

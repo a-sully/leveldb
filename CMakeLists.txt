@@ -436,7 +436,7 @@ add_custom_command(
   OUTPUT ${IDBKV_OUTPUT}
   DEPENDS node_modules
   DEPENDS ${IDBKV}
-  COMMAND npx tsc ${IDBKV} --outDir idbkv --module es6 --target es6
+  COMMAND npx tsc ${IDBKV} --outDir idbkv --module es2022 --target es2022
 )
 
 set(BENCHMARK_INPUT

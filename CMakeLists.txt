@@ -353,6 +353,17 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Debug")
 endif (CMAKE_SYSTEM_NAME STREQUAL "Debug")
 target_link_libraries(leveldbwasm leveldb)
 
+set(NODE_PACKAGE_INPUT
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/package.json"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/package-lock.json"
+)
+add_custom_command(
+  OUTPUT node_modules
+  DEPENDS ${NODE_PACKAGE_INPUT}
+  COMMAND cp ${NODE_PACKAGE_INPUT} ./
+  COMMAND npm install
+)
+
 # Copy typescript files into build directory (where glue.js also lives), then generate .js.
 set(JS_API_INPUT
   "${CMAKE_CURRENT_SOURCE_DIR}/wasm/js-api/leveldb_connection.ts"
@@ -371,6 +382,7 @@ set(JS_API_INPUT_STRIPPED ${JS_API_INPUT})
 list(TRANSFORM JS_API_INPUT_STRIPPED REPLACE ".*/" "")
 add_custom_command(
   OUTPUT ${JS_API_OUTPUT}
+  DEPENDS node_modules
   DEPENDS ${WEBIDL_BINDER_OUTPUT}
   DEPENDS ${JS_API_INPUT}
   COMMAND cp ${JS_API_INPUT} ./
@@ -390,6 +402,7 @@ set(DEMO_JS_INPUT_STRIPPED ${DEMO_JS_INPUT})
 list(TRANSFORM DEMO_JS_INPUT_STRIPPED REPLACE ".*/" "")
 add_custom_command(
   OUTPUT ${DEMO_JS_OUTPUT}
+  DEPENDS node_modules
   DEPENDS ${DEMO_JS_INPUT}
   DEPENDS ${JS_API_OUTPUT}
   COMMAND cp ${DEMO_JS_INPUT} ./
@@ -421,6 +434,7 @@ set(IDBKV_OUTPUT
 )
 add_custom_command(
   OUTPUT ${IDBKV_OUTPUT}
+  DEPENDS node_modules
   DEPENDS ${IDBKV}
   COMMAND npx tsc ${IDBKV} --outDir idbkv --module es6 --target es6
 )

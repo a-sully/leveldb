@@ -6,8 +6,3 @@
 # Build directory.
 build/
 out/
-
-#node
-package-lock.json
-package.json
-node_modules/

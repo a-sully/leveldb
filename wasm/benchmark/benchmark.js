@@ -1,4 +1,4 @@
-import { get as idbGet, set as idbSet, setMany as idbSetMany, clear as idbClear, del as idbDel} from './idbkv/index.js';
+import { get as idbGet, set as idbSet, setMany as idbSetMany, clear as idbClear, del as idbDel, entries as idbReadAll } from './idbkv/index.js';
 import { LevelDb } from './leveldb_db.js';
 
 const dbName = 'benchmark-db';
@@ -15,6 +15,7 @@ const indexedDb = {
   setMany: idbSetMany,
   remove: idbDel,
   clear: idbClear,
+  readAll: idbReadAll,
 }
 
 // Backend #2
@@ -53,6 +54,12 @@ class LevelDbImpl {
     let opfsRoot = await navigator.storage.getDirectory();
     await opfsRoot.removeEntry(dbName, { recursive: true });
   }
+  async readAll() {
+    const iter = await this.db_.newIterator();
+    const items = [];
+    for (await iter.seekToFirst(); iter.valid; await iter.next()) {
+    }
+  }
 }
 
 let activeBackend;
@@ -77,7 +84,7 @@ async function doWrites(startTimer) {
   const maxVal = Math.pow(36, 8);
   savedKeys = [];
   for (let i = 0; i < numEntries; ++i) {
-    let value = Array.from({length: valueSize / 8}, (i) => Math.floor(Math.random() * maxVal).toString(36)).join('');
+    let value = Array.from({ length: valueSize / 8 }, (i) => Math.floor(Math.random() * maxVal).toString(36)).join('');
     let key = toKey(i);
     savedKeys.push(key);
     pairs.push([key, value]);
@@ -88,7 +95,11 @@ async function doWrites(startTimer) {
 }
 
 const tests = {
-  readRandom: async function(startTimer) {
+  readAll: async function (startTimer) {
+    startTimer();
+    await activeBackend.readAll();
+  },
+  readRandom: async function (startTimer) {
     let keys = [];
     let promises = [];
     for (let i = 0; i < numReads; ++i) {
@@ -103,7 +114,7 @@ const tests = {
     return Promise.all(promises);
   },
 
-  readMissing: async function(startTimer) {
+  readMissing: async function (startTimer) {
     let keys = [];
     let promises = [];
     for (let i = 0; i < numReads; ++i) {
@@ -118,7 +129,7 @@ const tests = {
     return Promise.allSettled(promises);
   },
 
-  readHot: async function(startTimer) {
+  readHot: async function (startTimer) {
     let keys = [];
     let promises = [];
     for (let i = 0; i < numReads; ++i) {
@@ -133,7 +144,7 @@ const tests = {
     return Promise.all(promises);
   },
 
-  deleteRandom: async function(startTimer) {
+  deleteRandom: async function (startTimer) {
     let keys = [];
     let promises = [];
     for (let i = 0; i < numReads; ++i) {
@@ -148,7 +159,7 @@ const tests = {
     return Promise.all(promises);
   },
 
-  deleteSequential: async function(startTimer) {
+  deleteSequential: async function (startTimer) {
     let keys = [];
     let promises = [];
     for (let i = 0; i < numReads; ++i) {
@@ -165,6 +176,7 @@ const tests = {
 }
 
 function updateTestDescriptions() {
+  tests.readAll.description = 'reads all items from the database using an iterator/cursor';
   tests.readRandom.description = 'reads ' + numReads + ' random keys that exist in the database';
   tests.readMissing.description = 'reads ' + numReads + ' random keys that are not in the database';
   tests.readHot.description = 'reads 1% of the keys in the database ' + numReads + ' times';
@@ -181,7 +193,7 @@ async function fillStore() {
 }
 
 async function benchmark(fn) {
-  writeOutput('Running [' + fn.name +'], which ' + fn.description + '...');
+  writeOutput('Running [' + fn.name + '], which ' + fn.description + '...');
   let t0;
   await fn(() => t0 = performance.now());
   const t1 = performance.now();
@@ -221,7 +233,7 @@ async function runBenchmarks() {
   }));
 }
 
-window.onload = function() {
+window.onload = function () {
   getEm('run-button').onclick = runBenchmarks;
   getEm('clear-button').onclick = (event) => {
     let backend = LevelDbImpl.getInstance();

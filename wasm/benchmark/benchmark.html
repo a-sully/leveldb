@@ -1,58 +1,64 @@
 <html>
+
 <head>
-<link rel="stylesheet" href="benchmark.css">
-<script src="benchmark.js" type="module">
-</script>
+  <link rel="stylesheet" href="benchmark.css">
+  <script src="benchmark.js" type="module">
+  </script>
 </head>
+
 <body>
-<h1>Key value benchmark</h1>
-<div id="controls">
-<button id="run-button">Run</button>
-<div>
-<fieldset>
-    <legend>Select a backend:</legend>
-
+  <h1>Key value benchmark</h1>
+  <div id="controls">
+    <button id="run-button">Run</button>
     <div>
-      <input type="radio" id="idbkv" name="backend" checked>
-      <label for="idbkv">IndexedDB</label>
-      <a href="https://github.com/jakearchibald/idb-keyval">Learn more</a>
+      <fieldset>
+        <legend>Select a backend:</legend>
+
+        <div>
+          <input type="radio" id="idbkv" name="backend" checked>
+          <label for="idbkv">IndexedDB</label>
+          <a href="https://github.com/jakearchibald/idb-keyval">Learn more</a>
+        </div>
+
+        <div>
+          <input type="radio" id="leveldbwasm" name="backend">
+          <label for="leveldbwasm">LevelDB (via WASM)</label>
+          <a href="https://github.com/a-sully/leveldb">Learn more</a>
+        </div>
+      </fieldset>
+      <button id="clear-button">Reset db</button>
     </div>
+    <fieldset>
+      <legend>Select benchmarks:</legend>
 
-    <div>
-      <input type="radio" id="leveldbwasm" name="backend">
-      <label for="leveldbwasm">LevelDB (via WASM)</label>
-      <a href="https://github.com/a-sully/leveldb">Learn more</a>
-    </div>
-</fieldset>
-<button id="clear-button">Reset db</button>
-</div>
-<fieldset>
-    <legend>Select benchmarks:</legend>
+      <input type="checkbox" id="readAll" name="readAll">
+      <label for="readAll">read all values</label><br>
+      <input type="checkbox" id="readRandom" name="readRandom">
+      <label for="readRandom">read random values</label><br>
+      <input type="checkbox" id="readMissing" name="readMissing">
+      <label for="readMissing">read missing values</label><br>
+      <input type="checkbox" id="readHot" name="readHot">
+      <label for="readHot">read hot (the same values a lot)</label><br>
+      <input type="checkbox" id="deleteRandom" name="deleteRandom">
+      <label for="deleteRandom">delete in random order</label><br>
+      <input type="checkbox" id="deleteSequential" name="deleteSequential">
+      <label for="deleteSequential">delete in order</label><br>
+    </fieldset>
+    <fieldset>
+      <legend>Parameters:</legend>
 
-    <input type="checkbox" id="readRandom" name="readRandom">
-    <label for="readRandom">read random values</label><br>
-    <input type="checkbox" id="readMissing" name="readMissing">
-    <label for="readMissing">read missing values</label><br>
-    <input type="checkbox" id="readHot" name="readHot">
-    <label for="readHot">read hot (the same values a lot)</label><br>
-    <input type="checkbox" id="deleteRandom" name="deleteRandom">
-    <label for="deleteRandom">delete in random order</label><br>
-    <input type="checkbox" id="deleteSequential" name="deleteSequential">
-    <label for="deleteSequential">delete in order</label><br>
-</fieldset>
-<fieldset>
-    <legend>Parameters:</legend>
+      <span>Number of reads to execute:</span>
+      <input type="text" id="numReads" placeholder="10000"><br>
+      <span>Number of entries in store:</span>
+      <input type="text" id="numEntries" placeholder="10000"><br>
+      <span>Number of bytes in a value:</span>
+      <input type="text" id="valueSize" placeholder="10000">
+    </fieldset>
+  </div>
+  <span>Tips: check console for errors. Clear browsing data if things get
+    stuck.</span>
 
-    <span>Number of reads to execute:</span>
-    <input type="text" id="numReads" placeholder="10000"><br>
-    <span>Number of entries in store:</span>
-    <input type="text" id="numEntries" placeholder="10000"><br>
-    <span>Number of bytes in a value:</span>
-    <input type="text" id="valueSize" placeholder="10000">
-</fieldset>
-</div>
-<span>Tips: check console for errors. Clear browsing data if things get stuck.</span>
-
-<textarea id="output-area" readony></textarea>
+  <textarea id="output-area" readony></textarea>
 </body>
+
 </html>

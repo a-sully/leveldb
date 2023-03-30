@@ -5,6 +5,15 @@ let iterator_next_id = 0;
 const iterators = {};
 let moduleInstance = undefined;
 
+function iteratorResult(iterator) {
+  const valid = iterator.valid();
+  return {
+    valid,
+    key: valid ? iterator.key() : undefined,
+    value: valid ? iterator.value() : undefined,
+  }
+}
+
 const handlers = {
   LevelDb: {
     open(db) {
@@ -51,57 +60,43 @@ const handlers = {
     },
   },
   Iterator: {
-    valid({iterator_id_}) {
-      return {
-        result: iterators[iterator_id_].valid(),
-        ok: true,
-      }
-    },
     seekToFirst({iterator_id_}) {
-      iterators[iterator_id_].seekToFirst();
+      const iterator = iterators[iterator_id_];
+      iterator.seekToFirst();
       return {
+        result: iteratorResult(iterator),
         ok: true,
       }
     },
     seekToLast({iterator_id_}) {
-      iterators[iterator_id_].seekToLast();
+      const iterator = iterators[iterator_id_];
+      iterator.seekToLast();
       return {
+        result: iteratorResult(iterator),
         ok: true,
       }
     },
-    seek(iterator, target: String) {
-      iterators[iterator.iterator_id_].seek(target);
+    seek({iterator_id_}, target: String) {
+      const iterator = iterators[iterator_id_];
+      iterator.seek(target);
       return {
-        ok: true,
-      }
-    },
-    key({iterator_id_}) {
-      return {
-        result: iterators[iterator_id_].key(),
-        ok: true,
-      }
-    },
-    value({iterator_id_}) {
-      return {
-        result: iterators[iterator_id_].value(),
+        result: iteratorResult(iterator),
         ok: true,
       }
     },
     next({iterator_id_}) {
-      iterators[iterator_id_].next();
+      const iterator = iterators[iterator_id_];
+      iterator.next();
       return {
+        result: iteratorResult(iterator),
         ok: true,
       }
     },
     prev({iterator_id_}) {
-      iterators[iterator_id_].prev();
+      const iterator = iterators[iterator_id_];
+      iterator.prev();
       return {
-        ok: true,
-      }
-    },
-    status({iterator_id_}) {
-      return {
-        result: iterators[iterator_id_].valid(),
+        result: iteratorResult(iterator),
         ok: true,
       }
     },

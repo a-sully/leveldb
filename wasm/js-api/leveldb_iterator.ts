@@ -4,44 +4,36 @@ export class Iterator {
   private CLASS_NAME: string = this.constructor.name;
   private iterator_id_: number;
 
+  valid: boolean;
+  key: string | undefined;
+  value: string | undefined;
+
   public constructor(iterator_id: number) {
     this.iterator_id_ = iterator_id;
   }
 
-  valid(): Promise<boolean> {
-    return LevelDbConnection.getInstance().postMessage(this, 'valid');
+  private async postMessage(message, ...args) {
+    ({valid: this.valid, key: this.key, value: this.value} =
+      await LevelDbConnection.getInstance().postMessage(this, message, ...args));
   }
 
   seekToFirst(): Promise<void> {
-    return LevelDbConnection.getInstance().postMessage(this, 'seekToFirst');
+    return this.postMessage('seekToFirst');
   }
 
   seekToLast(): Promise<void> {
-    return LevelDbConnection.getInstance().postMessage(this, 'seekToLast');
+    return this.postMessage('seekToLast');
   }
 
   seek(target: String): Promise<void> {
-    return LevelDbConnection.getInstance().postMessage(this, 'seek', target)
-  }
-
-  key(): Promise<string> {
-    return LevelDbConnection.getInstance().postMessage(this, 'key');
-  }
-
-  value(): Promise<string> {
-    return LevelDbConnection.getInstance().postMessage(this, 'value');
+    return this.postMessage('seek', target)
   }
 
   next(): Promise<void> {
-    return LevelDbConnection.getInstance().postMessage(this, 'next');
+    return this.postMessage('next');
   }
 
   prev(): Promise<void> {
-    return LevelDbConnection.getInstance().postMessage(this, 'prev');
+    return this.postMessage('prev');
   }
-
-  status() {
-    return LevelDbConnection.getInstance().postMessage(this, 'status');
-  }
-
 }

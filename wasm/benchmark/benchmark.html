@@ -1,0 +1,36 @@
+<html>
+<head>
+<link rel="stylesheet" href="benchmark.css">
+<script src="benchmark.js" type="module">
+</script>
+</head>
+<body>
+<h1>Key value benchmark</h1>
+<div id="controls">
+<button id="run-button">Run</button>
+<fieldset>
+    <legend>Select a backend:</legend>
+
+    <div>
+      <input type="radio" id="idbkv" name="backend" checked>
+      <label for="idbkv">IndexedDB</label>
+      <a href="https://github.com/jakearchibald/idb-keyval">Learn more</a>
+    </div>
+
+    <div>
+      <input type="radio" id="leveldbwasm" name="backend">
+      <label for="leveldbwasm">LevelDB (via WASM)</label>
+      <a href="https://github.com/a-sully/leveldb">Learn more</a>
+    </div>
+</fieldset>
+<div>
+<input type="checkbox" id="readMissing" name="readMissing">
+<label for="readMissing">read missing values</label><br>
+<input type="checkbox" id="readHot" name="readHot">
+<label for="readHot">read hot (the same values a lot)</label><br>
+</div>
+</div>
+
+<textarea id="output-area" readony></textarea>
+</body>
+</html>

@@ -21,6 +21,7 @@ interface Iterator {
   void next();
   void prev();
   [Ref, Const] Status status();
+  void close();
 };
 
 interface DbWrapper {
@@ -41,4 +42,6 @@ interface DbWrapper {
   Iterator newIterator();
 
   [Ref, Const] Status getLastStatus();
+
+  void close();
 };

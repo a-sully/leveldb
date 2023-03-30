@@ -33,6 +33,9 @@ class Iterator {
 
   const Status& status();
 
+  // Destroys this.
+  void close();
+
  private:
   leveldb::Iterator* iterator_;
   std::string slice_string_;

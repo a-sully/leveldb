@@ -31,6 +31,9 @@ class DbWrapper {
   void batchEnd();
   void batchPut(const char* k, const char* v);
 
+  // Destroys this.
+  void close();
+
  private:
   leveldb::DB* db_ = nullptr;
   std::string value_;

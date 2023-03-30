@@ -17,9 +17,19 @@ function iteratorResult(iterator) {
 const handlers = {
   LevelDb: {
     open(db) {
-      databases[db.dbName_] = new moduleInstance.DbWrapper(db.dbName_);
+      if (databases[db.dbName_] == undefined) {
+        databases[db.dbName_] = new moduleInstance.DbWrapper(db.dbName_);
+      }
       let status = databases[db.dbName_].getLastStatus();
       return {errorString: status.toErrorString()};
+    },
+
+    close(db) {
+      if (databases[db.dbName_] != undefined) {
+        databases[db.dbName_].close();
+        databases[db.dbName_] = undefined;
+      }
+      return { ok: true }
     },
 
     put(db, k: string, v: string) {
@@ -102,6 +112,17 @@ const handlers = {
       return {
         result: iteratorResult(iterator),
         errorString: null,
+      }
+    },
+    close({iterator_id_}) {
+      const iterator = iterators[iterator_id_];
+
+      if (iterator != undefined) {
+        iterator.close();
+      }
+      iterators[iterator_id_] = undefined;
+      return {
+        ok: true,
       }
     },
   }

@@ -19,7 +19,11 @@ DbWrapper::DbWrapper(const char* name) {
   status_ = status;
 }
 
-DbWrapper::~DbWrapper() { delete db_; }
+DbWrapper::~DbWrapper() {
+  if (db_) {
+    delete db_;
+   }
+}
 
 void DbWrapper::put(const char* k, const char* v) {
   status_ = db_->Put({}, k, v);
@@ -65,3 +69,5 @@ void DbWrapper::batchPut(const char* k, const char* v) {
   }
   write_batch_->Put(k, v);
 }
+
+void DbWrapper::close() { delete db_; }

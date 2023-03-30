@@ -44,3 +44,5 @@ const Status& Iterator::status() {
   status_ = iterator_->status();
   return status_;
 }
+
+void Iterator::close() { delete iterator_; }

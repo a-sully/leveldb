@@ -1,17 +1,23 @@
 import { LevelDb } from './leveldb_db.js';
+import {Iterator} from './leveldb_iterator.js';
 
 const dbName = 'db';
-const db = new LevelDb('/opfs/' + dbName);
+let db: LevelDb = new LevelDb('/opfs/' + dbName);
 
-let selectedHandle;
+let selectedHandle: FileSystemDirectoryHandle;
 
 const openButton = document.getElementById("open_button");
 openButton.addEventListener("click", async () => {
   selectedHandle = await window.showDirectoryPicker();
 
-  // TODO: Clear any existing database first.
+  // Close the DB before attempting to copy any files.
   // Otherwise, this may fail due to a locking error.
-  await copyDirectory(selectedHandle, await getOpfsDbHandle());
+  await closeDatabase();
+
+  let dbHandle = await getOpfsDbHandle();
+  await clearDirectory(dbHandle);
+  await copyDirectory(selectedHandle, dbHandle);
+  await refreshIteratorTable();
 });
 
 const saveButton = document.getElementById("save_button");
@@ -41,10 +47,11 @@ saveElsewhereButton.addEventListener("click", async () => {
 
 const clearButton = document.getElementById("clear_button");
 clearButton.addEventListener("click", async () => {
-  const opfsRoot = await navigator.storage.getDirectory();
+  // Close the DB before attempting to copy any files.
+  // Otherwise, this may fail due to a locking error.
+  await closeDatabase();
 
-  // TODO: Close the database before trying to clear it.
-  // Currently, this fails due to a locking error.
+  const opfsRoot = await navigator.storage.getDirectory();
   await opfsRoot.removeEntry(dbName, { recursive: true });
 });
 
@@ -75,7 +82,6 @@ async function copyFile(source: FileSystemFileHandle, dest: FileSystemFileHandle
   const sourceFile = await source.getFile();
   const destWritable = await dest.createWritable();
   await sourceFile.stream().pipeTo(destWritable);
-  console.log("copyied: ", source.name);
 }
 
 const generateDataButton = document.getElementById('generate_data');
@@ -87,6 +93,7 @@ generateDataButton.addEventListener('click', async () => {
     data.push([key, value]);
   }
   await db.putMany(data);
+  await refreshIteratorTable();
 });
 
 const getButton = document.getElementById('get');
@@ -137,8 +144,8 @@ const iteratorTable = document.getElementById('table') as HTMLTableElement;
 const iteratorPrevButton = document.getElementById('iterator_prev') as HTMLInputElement;
 const iteratorNextButton = document.getElementById('iterator_next') as HTMLInputElement;
 
-let iteratorTop = undefined;
-let iteratorBottom = undefined;
+let iteratorTop: Iterator | undefined = undefined;
+let iteratorBottom: Iterator | undefined = undefined;
 
 const kIteratorStep = 10;
 
@@ -253,6 +260,16 @@ async function refreshIteratorTable(startingKey = undefined) {
       await iteratorNext();
     }
   }
+}
+
+async function closeDatabase() {
+  iteratorPrevButton.disabled = true;
+  iteratorNextButton.disabled = true;
+  while (iteratorTable.rows.length > 1) {
+    iteratorTable.deleteRow(1);
+  }
+
+  await db.close();
 }
 
 // Populate the initial entries in the table.

@@ -1,15 +1,16 @@
 import moduleInstanceConstructor from "./leveldbwasm.js";
-import { Module, Iterator, DbWrapper } from "./leveldbwasm";
+import { Module, DbWrapper, Db, Iterator } from "./leveldbwasm";
 
 type WorkerResponse = {
   result?: any,
   errorString: string | null;
 }
 
-const databases = new Map<string, DbWrapper>();
+const databases = new Map<string, Db>();
 let iterator_next_id = 0;
 const iterators = new Map<number, Iterator>();
 let moduleInstance: Module = undefined;
+let dbWrapper: DbWrapper = undefined;
 
 function iteratorResult(iterator: Iterator) {
   const valid = iterator.valid();
@@ -24,18 +25,26 @@ const handlers: { [key: string]: { [key: string]: (...args: any[]) => WorkerResp
   LevelDb: {
     open(dbName: string): WorkerResponse {
       let database = databases.get(dbName);
+      let errorString = null;
       if (!database) {
-        database = new moduleInstance.DbWrapper(dbName);
+        database = dbWrapper.open(dbName);
         databases.set(dbName, database);
+        const status = dbWrapper.getLastStatus();
+        errorString = status.toErrorString();
       }
-      let status = database.getLastStatus();
+      return {errorString};
+    },
+
+    destroy(dbName: string): WorkerResponse {
+      dbWrapper.destroy(dbName);
+      const status = dbWrapper.getLastStatus();
       return {errorString: status.toErrorString()};
     },
 
     close(dbName: string): WorkerResponse {
       const database = databases.get(dbName);
       if (database) {
-        database.close();
+        moduleInstance.destroy(database);
         databases.delete(dbName);
       }
       return { errorString: null }
@@ -131,7 +140,7 @@ const handlers: { [key: string]: { [key: string]: (...args: any[]) => WorkerResp
       const iterator = iterators.get(iteratorId);
 
       if (iterator != undefined) {
-        iterator.close();
+        moduleInstance.destroy(iterator);
       }
       iterators.delete(iteratorId);
       return {
@@ -144,6 +153,9 @@ const handlers: { [key: string]: { [key: string]: (...args: any[]) => WorkerResp
 onmessage = async (e) => {
   if (!moduleInstance) {
     moduleInstance = await moduleInstanceConstructor();
+  }
+  if (!dbWrapper) {
+    dbWrapper = new moduleInstance.DbWrapper();
   }
 
   if (e.data.length < 3) {

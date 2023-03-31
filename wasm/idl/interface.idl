@@ -23,27 +23,22 @@ interface Iterator {
   void next();
   void prev();
   [Ref, Const] Status status();
-  void close();
+};
+
+interface Db {
+  void put(DOMString k, DOMString v);
+  void batchStart();
+  void batchEnd();
+  void batchPut(DOMString k, DOMString v);
+  void remove(DOMString k);
+  [Const] DOMString get(DOMString k);
+  Iterator newIterator();
+  [Ref, Const] Status getLastStatus();
 };
 
 interface DbWrapper {
-  void DbWrapper(DOMString name);
-
-  void put(DOMString k, DOMString v);
-
-  void batchStart();
-
-  void batchEnd();
-
-  void batchPut(DOMString k, DOMString v);
-
-  void remove(DOMString k);
-
-  [Const] DOMString get(DOMString k);
-
-  Iterator newIterator();
-
+  void DbWrapper();
+  Db open(DOMString name);
+  void destroy(DOMString name);
   [Ref, Const] Status getLastStatus();
-
-  void close();
 };

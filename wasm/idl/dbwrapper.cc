@@ -4,70 +4,34 @@
 
 #include "dbwrapper.h"
 
-#include <memory>
-
 #include "include/leveldb/db.h"
 #include "include/leveldb/status.h"
-#include "iterator.h"
 
-DbWrapper::DbWrapper(const char* name) {
+#include "db.h"
+
+DbWrapper::DbWrapper() = default;
+
+DbWrapper::~DbWrapper() = default;
+
+Db* DbWrapper::open(const char* name) {
   leveldb::Options options;
   options.create_if_missing = true;
-  auto status = leveldb::DB::Open(options, name, &db_);
-  if (!status.ok())
+
+  leveldb::DB* leveldb = nullptr;
+  Db* db = nullptr;
+  leveldb::Status status = leveldb::DB::Open(options, name, &leveldb);
+  if (status.ok()) {
+    db = new Db(leveldb);
+  } else {
     printf("DB::Open not alright: %s\n", status.ToString().c_str());
+  }
   status_ = status;
+  return db;
 }
 
-DbWrapper::~DbWrapper() {
-  if (db_) {
-    delete db_;
-   }
-}
-
-void DbWrapper::put(const char* k, const char* v) {
-  status_ = db_->Put({}, k, v);
-}
-
-void DbWrapper::remove(const char* k) { status_ = db_->Delete({}, k); }
-
-const char* DbWrapper::get(const char* k) {
-  status_ = db_->Get({}, k, &value_);
-  return value_.c_str();
-}
-
-Iterator* DbWrapper::newIterator() {
-  return new Iterator(db_->NewIterator({}));
+void DbWrapper::destroy(const char* name) {
+  leveldb::Options options;
+  status_ = leveldb::DestroyDB(name, options);
 }
 
 const Status& DbWrapper::getLastStatus() { return status_; }
-
-void DbWrapper::batchStart() {
-  if (write_batch_) {
-    status_ = leveldb::Status::NotSupported(
-        "Called batchStart while in batch write.");
-    return;
-  }
-  write_batch_ =
-      std::unique_ptr<leveldb::WriteBatch>(new leveldb::WriteBatch());
-}
-void DbWrapper::batchEnd() {
-  if (!write_batch_) {
-    status_ = leveldb::Status::NotSupported(
-        "Called batchEnd while not in batch write.");
-    return;
-  }
-  db_->Write({}, write_batch_.get());
-  write_batch_.reset();
-}
-
-void DbWrapper::batchPut(const char* k, const char* v) {
-  if (!write_batch_) {
-    status_ = leveldb::Status::NotSupported(
-        "Called batchPut while not in batch write.");
-    return;
-  }
-  write_batch_->Put(k, v);
-}
-
-void DbWrapper::close() { delete db_; }

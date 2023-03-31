@@ -340,6 +340,8 @@ add_dependencies(leveldbwasm generate_webidl_glue)
 target_sources(leveldbwasm
   PRIVATE
     "wasm/idl/glue_wrapper.cc"
+    "wasm/idl/db.cc"
+    "wasm/idl/db.h"
     "wasm/idl/dbwrapper.cc"
     "wasm/idl/dbwrapper.h"
     "wasm/idl/status.cc"

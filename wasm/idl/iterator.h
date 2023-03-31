@@ -16,7 +16,7 @@ class Iterator;
 
 class Iterator {
  public:
-  Iterator(leveldb::Iterator* iterator = nullptr);
+  Iterator(leveldb::Iterator* iterator);
   ~Iterator();
 
   bool valid();
@@ -33,11 +33,8 @@ class Iterator {
 
   const Status& status();
 
-  // Destroys this.
-  void close();
-
  private:
-  leveldb::Iterator* iterator_;
+  std::unique_ptr<leveldb::Iterator> iterator_;
   std::string slice_string_;
 
   Status status_;

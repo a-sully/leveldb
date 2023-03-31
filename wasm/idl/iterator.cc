@@ -7,12 +7,8 @@
 #include "include/leveldb/iterator.h"
 #include "include/leveldb/slice.h"
 
-Iterator::Iterator(leveldb::Iterator* iterator) : iterator_(iterator){};
-Iterator::~Iterator() {
-  if (iterator_) {
-    delete iterator_;
-  }
-};
+Iterator::Iterator(leveldb::Iterator* iterator) : iterator_(iterator) {}
+Iterator::~Iterator() = default;
 
 bool Iterator::valid() { return iterator_->Valid(); }
 
@@ -44,5 +40,3 @@ const Status& Iterator::status() {
   status_ = iterator_->status();
   return status_;
 }
-
-void Iterator::close() { delete iterator_; }

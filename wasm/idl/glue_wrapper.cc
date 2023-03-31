@@ -4,5 +4,6 @@
 
 #include "status.h"
 #include "iterator.h"
+#include "db.h"
 #include "dbwrapper.h"
 #include "glue.cpp"

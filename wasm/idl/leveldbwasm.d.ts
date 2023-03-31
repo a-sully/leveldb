@@ -19,8 +19,7 @@ export interface Iterator {
     close(): void;
 }
 
-export interface DbWrapper {
-    new (name: string): DbWrapper;
+export interface Db {
     put(k: string, v: string): void;
     batchStart(): void;
     batchEnd(): void;
@@ -29,11 +28,18 @@ export interface DbWrapper {
     get(k: string): string;
     newIterator(): Iterator;
     getLastStatus(): Status;
-    close(): void;
+}
+
+export interface DbWrapper {
+    new (): DbWrapper;
+    open(name: string): Db;
+    destroy(name: string): void;
+    getLastStatus(): Status;
 }
 
 export type Module = {
-  DbWrapper: new (name: string) => DbWrapper;
+  DbWrapper: new () => DbWrapper;
+  destroy(obj: Iterator | Db): void;
 };
 
 declare let ModuleInstanceConstructor: () => Promise<Module>;

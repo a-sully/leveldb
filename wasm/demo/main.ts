@@ -51,8 +51,7 @@ clearButton.addEventListener("click", async () => {
   // Otherwise, this may fail due to a locking error.
   await closeDatabase();
 
-  const opfsRoot = await navigator.storage.getDirectory();
-  await opfsRoot.removeEntry(dbName, { recursive: true });
+  await LevelDb.destroy('/opfs/' + dbName);
 });
 
 async function getOpfsDbHandle() {

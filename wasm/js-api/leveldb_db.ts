@@ -19,6 +19,10 @@ export class LevelDb {
     this.startOpeningDb();
   }
 
+  public static destroy(dbName: string) {
+    return LevelDbConnection.getInstance().postMessage(dbName, 'LevelDb', 'destroy');
+  }
+
   // Ensures the database is open and ready for use, re-opening the database if
   // it was closed. Class methods operating on the database should call this
   // method before performing any database operations.

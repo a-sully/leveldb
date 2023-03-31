@@ -52,8 +52,9 @@ class LevelDbImpl {
   async clear() {
     await this.db_.close();
     let opfsRoot = await navigator.storage.getDirectory();
-    await opfsRoot.removeEntry(dbName, { recursive: true });
+    return opfsRoot.removeEntry(dbName, { recursive: true });
   }
+
   async readAll() {
     const iter = await this.db_.newIterator();
     const items = [];
@@ -99,6 +100,7 @@ const tests = {
     startTimer();
     await activeBackend.readAll();
   },
+
   readRandom: async function (startTimer) {
     let keys = [];
     let promises = [];
@@ -220,7 +222,6 @@ async function runBenchmarks() {
   else
     activeBackend = LevelDbImpl.getInstance();
 
-  activeBackend.clear();
   writeOutput('Generating random data...');
 
   // The generation is slow and bogs down the UI thread so give the above UI updates a chance to cycle.

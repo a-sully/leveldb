@@ -312,7 +312,7 @@ add_executable(leveldbutil
 target_link_libraries(leveldbutil leveldb)
 target_link_options(leveldbutil PRIVATE ${PRIVATE_TARGET_LINK_OPTIONS})
 
-###### START IDL glue ######
+###### START Wasm modifications ######
 if (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
 # Generate glue js and cpp via webidl_binder.
 set(WEBIDL_TS_DEFINITIONS
@@ -468,7 +468,7 @@ add_custom_target(leveldbwasmbench
   DEPENDS ${BENCHMARK_OUTPUT})
 add_dependencies(leveldbwasmbench leveldbwasm jsapi)
 endif (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
-###### END IDL glue ######
+###### END Wasm modifications ######
 
 if(LEVELDB_BUILD_TESTS)
   enable_testing()

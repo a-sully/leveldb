@@ -55,22 +55,22 @@ export class LevelDb {
   }
 
   public async put(k: string, v: string) {
-    await this.dbReady();
+    await this.dbOpenAndReady();
     await this.postMessage('put', k, v);
   }
 
   public async putMany(kvPairs: string[][]) {
-    await this.dbReady();
+    await this.dbOpenAndReady();
     await this.postMessage('putMany', kvPairs);
   }
 
   public async remove(k: string) {
-    await this.dbReady();
+    await this.dbOpenAndReady();
     await this.postMessage('remove', k);
   }
 
   public async get(k: string) {
-    await this.dbReady();
+    await this.dbOpenAndReady();
     return await this.postMessage('get', k);
   }
 

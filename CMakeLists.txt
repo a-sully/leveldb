@@ -355,6 +355,10 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Debug")
   target_link_options(leveldbwasm
     PUBLIC -sASSERTIONS -g -gsource-map
   )
+else (CMAKE_SYSTEM_NAME STREQUAL "Debug")
+  target_link_options(leveldbwasm
+    PUBLIC -O3
+  )
 endif (CMAKE_SYSTEM_NAME STREQUAL "Debug")
 target_link_libraries(leveldbwasm leveldb)
 

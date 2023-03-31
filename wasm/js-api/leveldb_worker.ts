@@ -1,170 +1,44 @@
 import moduleInstanceConstructor from "./leveldbwasm.js";
-import { Module, DbWrapper, Db, Iterator } from "./leveldbwasm";
 
-type WorkerResponse = {
-  result?: any,
-  errorString: string | null;
+import {getWorkerClass, MessageType, unwrapWorkerObj, WorkerClass} from "./leveldb_connection.js";
+import {LevelDb} from './leveldb_db.js';
+import {Iterator} from './leveldb_iterator.js';
+{
+  // Needed so typescript compiler doesn't throw away imports.
+  LevelDb;
+  Iterator;
 }
 
-const databases = new Map<string, Db>();
-let iterator_next_id = 0;
-const iterators = new Map<number, Iterator>();
-let moduleInstance: Module = undefined;
-let dbWrapper: DbWrapper = undefined;
 
-function iteratorResult(iterator: Iterator) {
-  const valid = iterator.valid();
-  return {
-    valid,
-    key: valid ? iterator.key() : undefined,
-    value: valid ? iterator.value() : undefined,
-  }
-}
-
-const handlers: { [key: string]: { [key: string]: (...args: any[]) => WorkerResponse } } = {
-  LevelDb: {
-    open(dbName: string): WorkerResponse {
-      let database = databases.get(dbName);
-      let errorString = null;
-      if (!database) {
-        database = dbWrapper.open(dbName);
-        databases.set(dbName, database);
-        const status = dbWrapper.getLastStatus();
-        errorString = status.toErrorString();
-      }
-      return {errorString};
-    },
-
-    destroy(dbName: string): WorkerResponse {
-      dbWrapper.destroy(dbName);
-      const status = dbWrapper.getLastStatus();
-      return {errorString: status.toErrorString()};
-    },
-
-    close(dbName: string): WorkerResponse {
-      const database = databases.get(dbName);
-      if (database) {
-        moduleInstance.destroy(database);
-        databases.delete(dbName);
-      }
-      return { errorString: null }
-    },
-
-    put(dbName: string, k: string, v: string): WorkerResponse {
-      const database = databases.get(dbName);
-      database.put(k, v);
-      let status = database.getLastStatus();
-      return {errorString: status.toErrorString()};
-    },
-
-    putMany(dbName: string, kvPairs: string[][]): WorkerResponse {
-      const database = databases.get(dbName);
-      database.batchStart();
-      for (const [k, v] of kvPairs) {
-        database.batchPut(k, v);
-        const errorString = database.getLastStatus().toErrorString();
-        if (errorString) {
-          return {errorString};
-        }
-      }
-      database.batchEnd();
-      return {errorString: null};
-    },
-
-    get(dbName: string, k: string): WorkerResponse {
-      const database = databases.get(dbName);
-      const result = database.get(k);
-      let status = database.getLastStatus();
-      return {result, errorString: status.toErrorString()};
-    },
-
-    remove(dbName: string, k: string): WorkerResponse {
-      const database = databases.get(dbName);
-      database.remove(k);
-      let status = database.getLastStatus();
-      return {errorString: status.toErrorString()};
-    },
-
-    newIterator(dbName: string): WorkerResponse {
-      const iterator_id = iterator_next_id;
-      iterator_next_id++;
-
-      const database = databases.get(dbName);
-      iterators.set(iterator_id, database.newIterator());
-
-      return {result: iterator_id, errorString: null};
-    },
-  },
-  Iterator: {
-    seekToFirst(iteratorId: number): WorkerResponse {
-      const iterator = iterators.get(iteratorId);
-      iterator.seekToFirst();
-      return {
-        result: iteratorResult(iterator),
-        errorString: null,
-      }
-    },
-    seekToLast(iteratorId: number): WorkerResponse {
-      const iterator = iterators.get(iteratorId);
-      iterator.seekToLast();
-      return {
-        result: iteratorResult(iterator),
-        errorString: null,
-      }
-    },
-    seek(iteratorId: number, target: string): WorkerResponse {
-      const iterator = iterators.get(iteratorId);
-      iterator.seek(target);
-      return {
-        result: iteratorResult(iterator),
-        errorString: null,
-      }
-    },
-    next(iteratorId: number): WorkerResponse {
-      const iterator = iterators.get(iteratorId);
-      iterator.next();
-      return {
-        result: iteratorResult(iterator),
-        errorString: null,
-      }
-    },
-    prev(iteratorId: number): WorkerResponse {
-      const iterator = iterators.get(iteratorId);
-      iterator.prev();
-      return {
-        result: iteratorResult(iterator),
-        errorString: null,
-      }
-    },
-    close(iteratorId: number): WorkerResponse {
-      const iterator = iterators.get(iteratorId);
-
-      if (iterator != undefined) {
-        moduleInstance.destroy(iterator);
-      }
-      iterators.delete(iteratorId);
-      return {
-        errorString: null,
-      }
-    },
-  }
-}
+let setWasmModuleInstance: boolean = false;
 
 onmessage = async (e) => {
-  if (!moduleInstance) {
-    moduleInstance = await moduleInstanceConstructor();
-  }
-  if (!dbWrapper) {
-    dbWrapper = new moduleInstance.DbWrapper();
+  if (!setWasmModuleInstance) {
+    setWasmModuleInstance = true;
+    WorkerClass.setWasmModuleInstance(await moduleInstanceConstructor());
   }
 
-  if (e.data.length < 3) {
-    throw new Error("Message must contain messageId, targetObj, and messageName");
+  const {messageId, wrappedWorkerObj, className, isStatic, funcName, args}: MessageType = e.data;
+
+  let workerObj: any;
+  if (isStatic) {
+    if (!className) {
+      throw new Error("Must pass className for static functions.");
+    }
+    workerObj = getWorkerClass(className);
+  } else {
+    if (!wrappedWorkerObj) {
+      throw new Error("Must pass wrappedWorkerObj for method functions.");
+    }
+    workerObj = unwrapWorkerObj(wrappedWorkerObj);
   }
 
-  const [messageId, targetObj, className, messageName, ...args]: [number, string | number, string, string, ...any] = e.data;
-
-  const handler: ((...args: any[]) => WorkerResponse) = handlers[className][messageName]
-  const {result, errorString} = handler(targetObj, ...args);
-  postMessage([messageId, errorString, result]);
+  let error: any;
+  let result: any;
+  try {
+    result = await workerObj[funcName](...args);
+  } catch (e: any) {
+    error = e;
+  }
+  postMessage([messageId, error, result]);
 };

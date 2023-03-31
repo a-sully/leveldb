@@ -1,54 +1,108 @@
-import {LevelDbConnection} from './leveldb_connection.js';
+import {WorkerClass, worker_class, worker_func} from './leveldb_connection.js';
+import {Iterator as LevelDbIterator} from "./leveldbwasm";
 
-export class Iterator {
-  private CLASS_NAME: string = this.constructor.name;
-  private iterator_id_: number;
+type IteratorResult = {
+  valid: boolean;
+  key: string;
+  value: string;
+}
+
+@worker_class
+export class Iterator extends WorkerClass {
+  private levelDbIter_: LevelDbIterator | undefined;
 
   valid: boolean = false;
   closed: boolean = false;
-  key: string | undefined= undefined;
+  key: string | undefined = undefined;
   value: string | undefined = undefined;
 
-  public constructor(iterator_id: number) {
-    this.iterator_id_ = iterator_id;
+  public async ready(): Promise<string | void> {
+    if (this.closed) {
+      throw new Error("DB for iterator closed");
+    }
   }
 
-  private async postMessage(message: string, ...args: any[]) {
-    ({valid: this.valid, key: this.key, value: this.value} =
-      await LevelDbConnection.getInstance().postMessage(this.iterator_id_, 'Iterator', message, ...args));
+  public setLevelDbIter(levelDbIter: LevelDbIterator) {
+    this.levelDbIter_ = levelDbIter;
   }
 
-  seekToFirst(): Promise<void> {
-    if (this.closed) return Promise.reject();
-    return this.postMessage('seekToFirst');
+  private iteratorResult(): IteratorResult {
+    const valid = this.levelDbIter_.valid();
+    return {
+      valid,
+      key: valid ? this.levelDbIter_.key() : undefined,
+      value: valid ? this.levelDbIter_.value() : undefined,
+    }
   }
 
-  seekToLast(): Promise<void> {
-    if (this.closed) return Promise.reject();
-    return this.postMessage('seekToLast');
+  private cacheIteratorResult(iteratorResult: IteratorResult): void {
+    const {valid, key, value} = iteratorResult;
+    this.valid = valid;
+    this.key = key;
+    this.value = value;
   }
 
-  seek(target: String): Promise<void> {
-    if (this.closed) return Promise.reject();
-    return this.postMessage('seek', target)
+  @worker_func()
+  private async seekToFirstImpl(): Promise<IteratorResult> {
+    this.levelDbIter_.seekToFirst();
+    return this.iteratorResult();
   }
 
-  next(): Promise<void> {
-    if (this.closed) return Promise.reject();
-    return this.postMessage('next');
+  public async seekToFirst(): Promise<void> {
+    this.cacheIteratorResult(await this.seekToFirstImpl());
   }
 
-  prev(): Promise<void> {
-    if (this.closed) return Promise.reject();
-    return this.postMessage('prev');
+  @worker_func()
+  private async seekToLastImpl(): Promise<IteratorResult> {
+    this.levelDbIter_.seekToLast();
+    return this.iteratorResult();
   }
 
-  close(): Promise<void> {
-    if (this.closed) return Promise.reject();
+  public async seekToLast(): Promise<void> {
+    this.cacheIteratorResult(await this.seekToLastImpl());
+  }
+
+  @worker_func()
+  private async seekImpl(target: string): Promise<IteratorResult> {
+    this.levelDbIter_.seek(target);
+    return this.iteratorResult();
+  }
+
+  public async seek(target: string): Promise<void> {
+    this.cacheIteratorResult(await this.seekImpl(target));
+  }
+
+  @worker_func()
+  private async nextImpl(): Promise<IteratorResult> {
+    this.levelDbIter_.next();
+    return this.iteratorResult();
+  }
+
+  public async next(): Promise<void> {
+    this.cacheIteratorResult(await this.nextImpl());
+  }
+
+  @worker_func()
+  private async prevImpl(): Promise<IteratorResult> {
+    this.levelDbIter_.prev();
+    return this.iteratorResult();
+  }
+
+  public async prev(): Promise<void> {
+    this.cacheIteratorResult(await this.prevImpl());
+  }
+
+  @worker_func()
+  private async closeImpl(): Promise<void> {
+    WorkerClass.getWasmModuleInstance().destroy(this.levelDbIter_);
+    delete this.levelDbIter_;
+  }
+
+  async close(): Promise<void> {
+    await this.closeImpl();
     this.valid = false;
     this.closed = true;
     this.key = undefined;
     this.value = undefined;
-    return LevelDbConnection.getInstance().postMessage(this.iterator_id_, 'Iterator', 'close');
   }
 }

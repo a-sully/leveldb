@@ -1,26 +1,48 @@
 import {Iterator} from './leveldb_iterator.js';
-import {LevelDbConnection} from './leveldb_connection.js';
+import {
+  WorkerClass,
+  WrappedWorkerObj,
+  worker_class,
+  worker_func,
+  worker_static_func,
+  unwrapWorkerObj,
+  wrapWorkerObj
+} from './leveldb_connection.js';
+import {DbWrapper, Db} from "./leveldbwasm";
 
 let db_create_promise_next_id = 0;
 const db_create_promises = new Map<number, Promise<void>>();
 
-export class LevelDb {
-  private CLASS_NAME: string = this.constructor.name;
-  private static nextId: number = 0;
-  private id_: number;
+@worker_class
+export class LevelDb extends WorkerClass {
+  private static dbWrapper_: DbWrapper;
   private dbName_: string;
   private db_created_promise_id_: number;
   private isClosed_ = true;
   private iterators_: Iterator[] = [];
+  private leveldDb_: Db | undefined;
 
   public constructor(dbName: string) {
-    this.id_ = ++LevelDb.nextId;
+    super();
     this.dbName_ = dbName;
     this.startOpeningDb();
   }
 
+  @worker_static_func
   public static destroy(dbName: string) {
-    return LevelDbConnection.getInstance().postMessage(dbName, 'LevelDb', 'destroy');
+    LevelDb.dbWrapper_.destroy(dbName);
+    const status = LevelDb.dbWrapper.getLastStatus();
+    const errorString = status.toErrorString();
+    if (errorString) {
+      throw new Error(errorString);
+    }
+  }
+
+  private static get dbWrapper() {
+    if (!LevelDb.dbWrapper_) {
+      LevelDb.dbWrapper_ = new (WorkerClass.getWasmModuleInstance()).DbWrapper();
+    }
+    return LevelDb.dbWrapper_;
   }
 
   // Ensures the database is open and ready for use, re-opening the database if
@@ -29,22 +51,34 @@ export class LevelDb {
   // TODO: Auto-reopening is implemented now for simplicity of the calling code,
   // but this may not be desired behavior. Especially because...
   // TODO: Add better error handling if opening the database fails.
-  private async dbOpenAndReady() {
+  public async ready(): Promise<string | void> {
     if (this.isClosed_) {
       this.startOpeningDb();
     }
     await this.dbReady();
   }
 
-  postMessage(method: string, ...args: any[]) {
-    return LevelDbConnection.getInstance().postMessage(this.dbName_, 'LevelDb', method, ...args);
-  }
-
   private startOpeningDb() {
     this.isClosed_ = false;
     this.db_created_promise_id_ = db_create_promise_next_id;
     db_create_promise_next_id++;
-    db_create_promises.set(db_create_promise_next_id, this.postMessage('open'));
+    db_create_promises.set(this.db_created_promise_id_, this.open());
+  }
+
+  private throwIfError() {
+    const status = this.leveldDb_.getLastStatus();
+    const errorString = status.toErrorString();
+    if (errorString) {
+      throw new Error(errorString);
+    }
+  }
+
+  @worker_func(false)
+  private async open() {
+    if (!this.leveldDb_) {
+      this.leveldDb_ = LevelDb.dbWrapper.open(this.dbName_);
+      this.throwIfError();
+    }
   }
 
   private async dbReady() {
@@ -58,31 +92,58 @@ export class LevelDb {
     return this.dbName_;
   }
 
+  @worker_func()
   public async put(k: string, v: string) {
-    await this.dbOpenAndReady();
-    await this.postMessage('put', k, v);
+    if (!this.leveldDb_) {
+      throw new Error("Database not open");
+    }
+    this.leveldDb_.put(k, v);
+    this.throwIfError();
   }
 
+  @worker_func()
   public async putMany(kvPairs: string[][]) {
-    await this.dbOpenAndReady();
-    await this.postMessage('putMany', kvPairs);
+    this.leveldDb_.batchStart();
+    for (const [k, v] of kvPairs) {
+      this.leveldDb_.batchPut(k, v);
+      this.throwIfError();
+    }
+    this.leveldDb_.batchEnd();
   }
 
+  @worker_func()
   public async remove(k: string) {
-    await this.dbOpenAndReady();
-    await this.postMessage('remove', k);
+    this.leveldDb_.remove(k);
+    this.throwIfError();
   }
 
+  @worker_func()
   public async get(k: string) {
-    await this.dbOpenAndReady();
-    return await this.postMessage('get', k);
+    const result = this.leveldDb_.get(k);
+    this.throwIfError();
+    return result;
+  }
+
+  @worker_func()
+  private async newIteratorImpl(wrappedIter: WrappedWorkerObj) {
+    const iter = unwrapWorkerObj(wrappedIter);
+    iter.setLevelDbIter(this.leveldDb_.newIterator());
+
+    this.throwIfError();
   }
 
   public async newIterator() {
-    await this.dbOpenAndReady();
-    let iterator = new Iterator(await this.postMessage('newIterator'));
+    const iterator = new Iterator();
+
+    await this.newIteratorImpl(wrapWorkerObj(iterator));
     this.iterators_.push(iterator);
     return iterator;
+  }
+
+  @worker_func(false)
+  private async closeImpl() {
+    WorkerClass.getWasmModuleInstance().destroy(this.leveldDb_);
+    delete this.leveldDb_;
   }
 
   public async close() {
@@ -99,6 +160,6 @@ export class LevelDb {
 
     this.iterators_ = [];
 
-    await this.postMessage('close');
+    await this.closeImpl();
   }
 }

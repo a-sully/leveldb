@@ -397,7 +397,7 @@ add_custom_command(
   DEPENDS ${WEBIDL_BINDER_OUTPUT}
   DEPENDS ${JS_API_INPUT}
   COMMAND cp ${JS_API_INPUT} ./
-  COMMAND npx tsc --module es2022 --target es2022 --noImplicitAny ${JS_API_INPUT_STRIPPED}
+  COMMAND npx tsc --module es2022 --target es2022 --noImplicitAny ${JS_API_INPUT_STRIPPED} --experimentalDecorators
 )
 add_custom_target(jsapi DEPENDS ${JS_API_OUTPUT})
 add_dependencies(jsapi leveldbwasm)
@@ -417,7 +417,7 @@ add_custom_command(
   DEPENDS ${DEMO_JS_INPUT}
   DEPENDS ${JS_API_OUTPUT}
   COMMAND cp ${DEMO_JS_INPUT} ./
-  COMMAND npx tsc --module es2022 --target es2022 --noImplicitAny ${DEMO_JS_INPUT_STRIPPED}
+  COMMAND npx tsc --module es2022 --target es2022 --noImplicitAny ${DEMO_JS_INPUT_STRIPPED} --experimentalDecorators
 )
 add_custom_target(leveldbwasmdemo_js DEPENDS ${DEMO_JS_OUTPUT})
 add_dependencies(leveldbwasmdemo_js jsapi)

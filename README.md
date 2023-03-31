@@ -60,10 +60,11 @@ Build the `leveldbwasmbench` target and direct your browser to `benchmark.html` 
 
 This compares the speed of LevelDB via Wasm to IndexedDB (wrapped with [IDB-Keyval](https://github.com/jakearchibald/idb-keyval)) for some simple key/value store operations, mainly `put`, `get` and `delete`. DevTools should be able to show additional metrics such as local storage space used (in Chromium this is found under the `Application` tab).
 
-## Develop
+Preliminary results indicate a 25-35% speed-up for fetching data, with similar write speed and storage footprint.
+
+# Develop
 
 The public-facing API is published in `./wasm/js-api/`. Some code for interfacing between ES and C++ resides in `./wasm/idl/`. For usage examples, refer to the demo and benchmark apps 
-
 
 ### Authors
 

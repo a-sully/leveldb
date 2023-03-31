@@ -14,9 +14,7 @@ Db::Db(leveldb::DB* db) : db_(db) {}
 
 Db::~Db() = default;
 
-void Db::put(const char* k, const char* v) {
-  status_ = db_->Put({}, k, v);
-}
+void Db::put(const char* k, const char* v) { status_ = db_->Put({}, k, v); }
 
 void Db::remove(const char* k) { status_ = db_->Delete({}, k); }
 
@@ -26,6 +24,7 @@ const char* Db::get(const char* k) {
 }
 
 Iterator* Db::newIterator() {
+  status_ = leveldb::Status::OK();
   return new Iterator(db_->NewIterator({}));
 }
 

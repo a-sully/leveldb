@@ -1,6 +1,8 @@
 import { get as idbGet, set as idbSet, setMany as idbSetMany, clear as idbClear, del as idbDel} from './idbkv/index.js';
 import { LevelDb } from './leveldb_db.js';
 
+const dbName = 'benchmark-db';
+
 // Default values for benchmark parameters.
 let numReads = 10000;
 let numEntries = 10000;
@@ -26,7 +28,7 @@ class LevelDbImpl {
 
   static getInstance() {
     if (!LevelDbImpl.instance_)
-      LevelDbImpl.instance_ = new LevelDbImpl('opfs/benchmark-db');
+      LevelDbImpl.instance_ = new LevelDbImpl('opfs/' + dbName);
     return LevelDbImpl.instance_;
   }
 
@@ -46,9 +48,10 @@ class LevelDbImpl {
     return this.db_.remove(key);
   }
 
-  clear() {
-    return null;
-    // notimpl
+  async clear() {
+    await this.db_.close();
+    let opfsRoot = await navigator.storage.getDirectory();
+    await opfsRoot.removeEntry(dbName, { recursive: true });
   }
 }
 

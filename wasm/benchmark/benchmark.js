@@ -120,7 +120,7 @@ const tests = {
     let promises = [];
     for (let i = 0; i < numReads; ++i) {
       // Select randomly among existing keys, but only 1%.
-      keys.push(savedKeys[Math.floor(Math.random() * (savedKeys.length / 100))]);
+      keys.push(savedKeys[99 * Math.floor(Math.random() * (savedKeys.length / 100))]);
     }
     // Generation of keys is not an interesting thing to test, so don't start the timer until that's done.
     startTimer();
@@ -220,4 +220,10 @@ async function runBenchmarks() {
 
 window.onload = function() {
   getEm('run-button').onclick = runBenchmarks;
+  getEm('clear-button').onclick = (event) => {
+    let backend = LevelDbImpl.getInstance();
+    if (getEm('idbkv').checked)
+      backend = indexedDb;
+    backend.clear();
+  };
 }

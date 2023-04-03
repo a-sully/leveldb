@@ -2,6 +2,7 @@ import { get as idbGet, set as idbSet, setMany as idbSetMany, clear as idbClear,
 import { LevelDb } from './leveldb_db.js';
 
 const dbName = 'benchmark-db';
+const sqliteDbName = 'sql.db';
 
 // Default values for benchmark parameters.
 let numReads = 10000;
@@ -10,6 +11,7 @@ let valueSize = 10000;
 
 // Backend #1
 const indexedDb = {
+  waitUntilOpen: async () => { return },
   get: idbGet,
   set: idbSet,
   setMany: idbSetMany,
@@ -32,6 +34,8 @@ class LevelDbImpl {
       LevelDbImpl.instance_ = new LevelDbImpl('opfs/' + dbName);
     return LevelDbImpl.instance_;
   }
+
+  async waitUntilOpen() { return; }
 
   get(key) {
     return this.db_.get(key);
@@ -60,6 +64,99 @@ class LevelDbImpl {
     const items = [];
     for (await iter.seekToFirst(); iter.valid; await iter.next()) {
     }
+  }
+}
+
+// Backend #3
+//
+// Uses SQLite's Promiser wrapper for easy use of the sqlite3 library from the
+// main thread. See https://sqlite.org/wasm/doc/tip/api-worker1.md#promiser
+class SqliteImpl {
+  static instance_;
+  worker_;
+  promiser_;
+  set_value_queue_ = {};
+
+  static getInstance() {
+    if (!SqliteImpl.instance_)
+      SqliteImpl.instance_ = new SqliteImpl('sqlite.db');
+    return SqliteImpl.instance_;
+  }
+
+  async waitUntilOpen() {
+    return new Promise(resolve => {
+      this.promiser_ = self.sqlite3Worker1Promiser(async () => {
+        this.promiser_('open', { filename: 'file:' + sqliteDbName + '?vfs=opfs' }).then((msg)=>{
+          this.promiser_('exec', { sql: 'CREATE TABLE IF NOT EXISTS store (key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL) WITHOUT ROWID' }).then((msg)=>{
+            this.promiser_('exec', { sql: 'CREATE INDEX key_index ON store (key)' }).then((msg)=>{
+              resolve();
+            }).catch((e)=>{
+              console.error('creating index failed:', e);
+              resolve();
+            })
+          }).catch((e)=>{
+            console.error('creating table failed:', e);
+            reject(e);
+          })
+        }).catch((e)=>{
+          console.error('opening database file failed:', e);
+          reject(e);
+        })
+      })
+    });
+  }
+
+  async get(key) {
+    let results = [];
+    await this.promiser_('exec', {sql: 'SELECT value FROM store WHERE key=\'' + key + '\'', callback: (result) => {
+      if (result['row'] != undefined) {
+        results.push(result['row'][0]);
+      }
+    }});
+    console.assert(results.length == 0 || results.length == 1)
+    return results[0];
+  }
+
+  set(key, val) {
+    return this.promiser_('exec', {sql: 'INSERT OR REPLACE INTO store (key, value) VALUES (\'' + key + '\',\'' + val + '\')'});
+  }
+
+  async setMany(pairs) {
+    // TODO: This may not be correct, depending on the order in which the set
+    // calls hit the worker. But that doesn't really matter for the purpose of
+    // these benchmarks.
+    //
+    // This is also ripe for optimization. For example, we could:
+    //  - initialize and use SQLite from a worker rather than using the
+    //    sqlite3Worker1Promiser to post to the worker for each operation.
+    //  - insert multiple values at a time, though I believe this would
+    //    require removing duplciates. e.g. you can do this:
+    //        INSERT ... VALUES ('a', 'b'), ('c', 'd'), ('e', 'f')
+    //    but you can't do this if you want unique keys:
+    //        INSERT ... VALUES ('a', 'b'), ('a', 'd'), ('a', 'f')
+    let promises = [];
+    for (const [key, value] in pairs) {
+      promises.push(this.set(key, value));
+    }
+    return Promise.all(promises);
+  }
+
+  remove(key) {
+    return this.promiser_('exec', {sql: 'DELETE FROM store WHERE key=\'' + key + '\''});
+  }
+
+  async clear() {
+    return this.promiser_('close', {unlink: true});
+  }
+
+  async readAll() {
+    let results = [];
+    await this.promiser_('exec', {sql: 'SELECT key, value FROM store', callback: (result) => {
+      if (result['row'] != undefined) {
+        results.push([result['row'][0], result['row'][1]]);
+      }
+    }});
+    return results[0];
   }
 }
 
@@ -219,10 +316,14 @@ async function runBenchmarks() {
 
   if (getEm('idbkv').checked)
     activeBackend = indexedDb;
+  else if (getEm('sqlitewasm').checked)
+    activeBackend = SqliteImpl.getInstance();
   else
     activeBackend = LevelDbImpl.getInstance();
 
   writeOutput('Generating random data...');
+
+  await activeBackend.waitUntilOpen();
 
   // The generation is slow and bogs down the UI thread so give the above UI updates a chance to cycle.
   setTimeout(() => fillStore().then(async (resolve, reject) => {
@@ -237,9 +338,13 @@ async function runBenchmarks() {
 window.onload = function () {
   getEm('run-button').onclick = runBenchmarks;
   getEm('clear-button').onclick = (event) => {
-    let backend = LevelDbImpl.getInstance();
+    let backend;
     if (getEm('idbkv').checked)
       backend = indexedDb;
+    else if (getEm('sqlitewasm').checked)
+      backend = SqliteImpl.getInstance();
+    else
+      backend = LevelDbImpl.getInstance();
     backend.clear();
   };
 }

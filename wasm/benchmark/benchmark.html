@@ -2,6 +2,7 @@
 
 <head>
   <link rel="stylesheet" href="benchmark.css">
+  <script src="sqlite3-worker1-promiser.js"></script>
   <script src="benchmark.js" type="module">
   </script>
 </head>
@@ -15,7 +16,7 @@
         <legend>Select a backend:</legend>
 
         <div>
-          <input type="radio" id="idbkv" name="backend" checked>
+          <input type="radio" id="idbkv" name="backend">
           <label for="idbkv">IndexedDB</label>
           <a href="https://github.com/jakearchibald/idb-keyval">Learn more</a>
         </div>
@@ -24,6 +25,12 @@
           <input type="radio" id="leveldbwasm" name="backend">
           <label for="leveldbwasm">LevelDB (via WASM)</label>
           <a href="https://github.com/a-sully/leveldb">Learn more</a>
+        </div>
+
+        <div>
+          <input type="radio" id="sqlitewasm" name="backend" checked>
+          <label for="sqlitewasm">unoptimized SQLite (via WASM)</label>
+          <a href="https://sqlite.org/wasm/doc/trunk/index.md">Learn more</a>
         </div>
       </fieldset>
       <button id="clear-button">Reset db</button>

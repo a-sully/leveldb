@@ -454,6 +454,11 @@ set(BENCHMARK_INPUT
   "${CMAKE_CURRENT_SOURCE_DIR}/wasm/benchmark/benchmark.html"
   "${CMAKE_CURRENT_SOURCE_DIR}/wasm/benchmark/benchmark.js"
   "${CMAKE_CURRENT_SOURCE_DIR}/wasm/benchmark/benchmark.css"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/benchmark/jswasm/sqlite3.js"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/benchmark/jswasm/sqlite3.wasm"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/benchmark/jswasm/sqlite3-opfs-async-proxy.js"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/benchmark/jswasm/sqlite3-worker1.js"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wasm/benchmark/jswasm/sqlite3-worker1-promiser.js"
 )
 set(BENCHMARK_OUTPUT ${BENCHMARK_INPUT})
 list(TRANSFORM BENCHMARK_OUTPUT REPLACE ".*/" "")
